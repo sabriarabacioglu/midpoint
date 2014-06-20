@@ -72,7 +72,7 @@ public class MidPointAuthWebSession extends AuthenticatedWebSession {
 
         if (getLocale() == null) {
             //default locale for web application
-            setLocale(new Locale("en", "US"));
+            setLocale(new Locale("tr", "TR"));
         }
     }
 
