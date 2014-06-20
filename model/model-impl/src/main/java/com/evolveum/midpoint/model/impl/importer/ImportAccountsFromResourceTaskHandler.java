@@ -134,7 +134,9 @@ public class ImportAccountsFromResourceTaskHandler extends AbstractSearchIterati
         task.setHandlerUri(HANDLER_URI);
 
         // Readable task name
-        PolyStringType polyString = new PolyStringType("Import from resource " + resource.getName());
+    
+        PolyStringType polyString = new PolyStringType("Kaynaktan içe aktarım: " + resource.getName());
+       // PolyStringType polyString = new PolyStringType("Import from resource " + resource.getName());
         task.setName(polyString);
         
 
