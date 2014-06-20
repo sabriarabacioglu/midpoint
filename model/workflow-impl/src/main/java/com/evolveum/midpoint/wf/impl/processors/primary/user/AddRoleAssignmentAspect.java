@@ -237,7 +237,8 @@ public class AddRoleAssignmentAspect extends BasePrimaryChangeAspect {
             instruction.setProcessInstanceName("Adding " + roleName + " to " + userName);
 
             // setup general item approval process
-            String approvalTaskName = "Approve adding " + roleName + " to " + userName;
+            //String approvalTaskName = "Approve adding " + roleName + " to " + userName;
+            String approvalTaskName = userName +" isimli kullanıcıya " + roleName +" rolünü eklemeyi onaylayın.";
             itemApprovalProcessInterface.prepareStartInstruction(instruction, approvalRequest, approvalTaskName);
 
             // set some aspect-specific variables

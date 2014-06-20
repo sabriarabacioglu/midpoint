@@ -408,7 +408,8 @@ public class ReconciliationTaskHandler implements TaskHandler {
 
 			opResult.computeStatus();
 
-			String message = "Processed " + handler.getProgress() + " account(s), got " + handler.getErrors() + " error(s)";
+			//String message = "Processed " + handler.getProgress() + " account(s), got " + handler.getErrors() + " error(s)";
+			String message =  handler.getProgress() + "hesap(lar) işlendi ve " + handler.getErrors() + " hata(lar) oluştu.";
             if (interrupted) {
                 message += "; was interrupted during processing.";
             }

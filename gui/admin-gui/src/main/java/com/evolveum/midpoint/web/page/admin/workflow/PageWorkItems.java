@@ -241,7 +241,8 @@ public class PageWorkItems extends PageAdminWorkItems {
         }
 
         if (mainResult.isSuccess()) {
-            mainResult.recordStatus(OperationResultStatus.SUCCESS, "The work item(s) have been successfully " + (approve ? "approved." : "rejected."));
+           // mainResult.recordStatus(OperationResultStatus.SUCCESS, "The work item(s) have been successfully " + (approve ? "approved." : "rejected."));
+            mainResult.recordStatus(OperationResultStatus.SUCCESS, "İş öğe(leri) başarıyla " + (approve ? "onaylandı." : "reddedildi.."));
         }
 
         showResult(mainResult);

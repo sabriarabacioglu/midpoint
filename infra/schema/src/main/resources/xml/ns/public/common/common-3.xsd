@@ -2356,7 +2356,7 @@
             <xsd:element name="password" type="tns:PasswordType" minOccurs="0" maxOccurs="1">
                 <xsd:annotation>
                     <xsd:appinfo>
-                        <a:displayName>Password</a:displayName>
+                        <a:displayName>Şifre</a:displayName>
                     </xsd:appinfo>
                 </xsd:annotation>
             </xsd:element>
@@ -2637,7 +2637,7 @@
             </xsd:documentation>
             <xsd:appinfo>
                 <a:container/>
-                <a:displayName>Activation</a:displayName>
+                <a:displayName>Aktivasyon</a:displayName>
             </xsd:appinfo>
         </xsd:annotation>
         <xsd:sequence>

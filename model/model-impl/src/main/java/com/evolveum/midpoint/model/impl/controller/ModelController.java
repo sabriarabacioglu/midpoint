@@ -1293,7 +1293,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 				}
 			}
 			
-			result.recordStatus(OperationResultStatus.IN_PROGRESS, "Task running in background");
+			result.recordStatus(OperationResultStatus.IN_PROGRESS, "Görev arka planda çalışıyor");
 
 			importAccountsFromResourceTaskHandler.launch(resource, objectClass, task, result);
 

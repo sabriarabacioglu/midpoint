@@ -583,7 +583,7 @@ public class TaskManagerQuartzImpl implements TaskManager, BeanFactoryAware {
     @Override
 	public void switchToBackground(final Task task, OperationResult parentResult) {
 
-		parentResult.recordStatus(OperationResultStatus.IN_PROGRESS, "Task switched to background");
+		parentResult.recordStatus(OperationResultStatus.IN_PROGRESS, "Görev arka planda koşturuluyor");
 		OperationResult result = parentResult.createSubresult(DOT_INTERFACE + "switchToBackground");
 
         // if the task result was unknown, we change it to 'in-progress'
