@@ -1,13 +1,19 @@
 package com.evolveum.midpoint.web.component.menu.top;
 
 import com.evolveum.midpoint.web.component.util.VisibleEnableBehaviour;
+import com.evolveum.midpoint.web.page.admin.home.PageDashboard;
+import com.evolveum.midpoint.web.page.admin.users.PageUser;
+import com.evolveum.midpoint.web.util.OnePageParameterEncoder;
+
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
+import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.list.ListItem;
 import org.apache.wicket.markup.html.list.ListView;
 import org.apache.wicket.markup.html.panel.Panel;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
 
 import java.util.List;
 
@@ -23,6 +29,7 @@ public class TopMenuBar extends Panel {
     private static String ID_MENU_ITEM = "menuItem";
     private static String ID_MENU_ITEM_BODY = "menuItemBody";
     public static String ID_RIGHT_PANEL = "rightPanel";
+    public static String ID_LOGO_LINK = "logoLink";
 
     public TopMenuBar(String id, List<MenuBarItem> items) {
         super(id);
@@ -51,7 +58,17 @@ public class TopMenuBar extends Panel {
         WebMarkupContainer rightPanel = new WebMarkupContainer(ID_RIGHT_PANEL);
         rightPanel.setVisible(false);
         add(rightPanel);
+        add(new Link(ID_LOGO_LINK)
+        {
+            public void onClick()
+            {
+            	  
+                  setResponsePage(PageDashboard.class);
+            }
+        });
+        
     }
+    
 
     private void initMenuBarItem(ListItem<MenuBarItem> menuBar) {
         final MenuBarItem menuBarItem = menuBar.getModelObject();
