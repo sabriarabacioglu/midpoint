@@ -2182,6 +2182,7 @@
                             <xsd:appinfo>
                                 <a:displayName>UserType.emailAddress</a:displayName>
                                 <a:displayOrder>300</a:displayOrder>
+                                
                             </xsd:appinfo>
                         </xsd:annotation>
                     </xsd:element>

@@ -89,7 +89,7 @@ public class Main {
 	// Configuration
 	public static final String ADM_USERNAME = "administrator";
 	public static final String ADM_PASSWORD = "5ecr3t";
-	private static final String DEFAULT_ENDPOINT_URL = "http://localhost.:8080/midpoint/model/model-3";
+	private static final String DEFAULT_ENDPOINT_URL = "http://localhost:8084/midpoint/model/model-3";
 	
 	// Object OIDs
 	private static final String ROLE_PIRATE_OID = "12345678-d34d-b33f-f00d-987987987988";
@@ -134,13 +134,13 @@ public class Main {
             String userGuybrushoid = createUserGuybrush(modelPort, sailorRole);
 			System.out.println("Created user guybrush, OID: "+userGuybrushoid);
 			
-			String userLeChuckOid = createUserFromSystemResource(modelPort, "user-lechuck.xml");
-			System.out.println("Created user lechuck, OID: "+userLeChuckOid);
+		//	String userLeChuckOid = createUserFromSystemResource(modelPort, "user-lechuck.xml");
+		//	System.out.println("Created user lechuck, OID: "+userLeChuckOid);
 			
-			changeUserPassword(modelPort, userGuybrushoid, "MIGHTYpirate");
-			System.out.println("Changed user password");
+	//		changeUserPassword(modelPort, userGuybrushoid, "MIGHTYpirate");
+		//	System.out.println("Changed user password");
 
-            changeUserGivenName(modelPort, userLeChuckOid, "CHUCK");
+        /*    changeUserGivenName(modelPort, userLeChuckOid, "CHUCK");
             System.out.println("Changed user given name");
 			
 			assignRoles(modelPort, userGuybrushoid, ROLE_PIRATE_OID, ROLE_CAPTAIN_OID);
@@ -152,11 +152,10 @@ public class Main {
 			Collection<RoleType> roles = listRequestableRoles(modelPort);
 			System.out.println("Found requestable roles");
 			System.out.println(roles);
-			
+	*/		
 			// Uncomment the following lines if you want to see what midPoint really did
 			// ... because deleting the user will delete also all the traces (except logs and audit of course).
-			deleteUser(modelPort, userGuybrushoid);
-            deleteUser(modelPort, userLeChuckOid);
+			
 			System.out.println("Deleted user(s)");
 			
 		} catch (Exception e) {
@@ -278,12 +277,12 @@ public class Main {
 		user.getOrganizationalUnit().add(ModelClientUtil.createPolyStringType("Pirate Wannabes", doc));
 		user.setCredentials(ModelClientUtil.createPasswordCredentials("IwannaBEaPIRATE"));
 		
-		if (role != null) {
-			// create user with a role assignment
+	/*	if (role != null) {
+		// create user with a role assignment
 			AssignmentType roleAssignment = createRoleAssignment(role.getOid());
 			user.getAssignment().add(roleAssignment);
 		}
-		
+		*/
 		return createUser(modelPort, user);
 	}
 

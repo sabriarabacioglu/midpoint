@@ -60,7 +60,7 @@ public class ConfigurablePrismContextFactory extends MidPointPrismContextFactory
 
         if (StringUtils.isEmpty(extensionDir)) {
             if (StringUtils.isNotEmpty(configuration.getMidpointHome())) {
-                extensionDir = configuration.getMidpointHome() + "/schema";
+                extensionDir = configuration.getMidpointHome() + "schema";
             }
         }
 
