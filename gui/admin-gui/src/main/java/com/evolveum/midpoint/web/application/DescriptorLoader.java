@@ -16,6 +16,7 @@
 
 package com.evolveum.midpoint.web.application;
 
+import com.evolveum.midpoint.security.api.AuthorizationConstants;
 import com.evolveum.midpoint.util.ClassPathUtil;
 import com.evolveum.midpoint.util.DisplayableValue;
 import com.evolveum.midpoint.util.logging.LoggingUtils;
@@ -184,8 +185,27 @@ public final class DescriptorLoader {
     private void loadActions(PageDescriptor descriptor) {
         for (String url : descriptor.url()) {
             List<AuthorizationActionValue> actions = new ArrayList<>();
+            
+          //avoid of setting guiAll authz for "public" pages (e.g. login page)
+            if (descriptor.action() == null || descriptor.action().length == 0){
+            	return;            	
+            }
+            
+            boolean canAccess = true;
+            
             for (AuthorizationAction action : descriptor.action()) {
                 actions.add(new AuthorizationActionValue(action.actionUri(), action.label(), action.description()));
+                if (AuthorizationConstants.AUTZ_NO_ACCESS_URL.equals(action.actionUri())){
+                	canAccess = false;
+                	break;
+                }
+            }
+            
+            //add http://.../..#guAll authorization only for displayable pages, not for pages used for development..
+            if (canAccess){  
+            	
+            	actions.add(new AuthorizationActionValue(AuthorizationConstants.AUTZ_GUI_ALL_URI,
+                    AuthorizationConstants.AUTZ_GUI_ALL_LABEL, AuthorizationConstants.AUTZ_GUI_ALL_DESCRIPTION));
             }
             this.actions.put(url, actions.toArray(new DisplayableValue[actions.size()]));
         }

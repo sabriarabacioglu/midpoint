@@ -35,6 +35,7 @@ import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.RoleType;
 import com.evolveum.midpoint.xml.ns._public.model.scripting_3.ActionExpressionType;
 
+import com.evolveum.midpoint.xml.ns._public.model.scripting_3.ActionParameterValueType;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -64,20 +65,22 @@ public class AssignExecutor extends BaseActionExecutor {
     @Override
     public Data execute(ActionExpressionType expression, Data input, ExecutionContext context, OperationResult result) throws ScriptExecutionException {
 
-        JAXBElement<?> resourceExpression = expressionHelper.getArgument(expression.getParameter(), PARAM_RESOURCE, false, false, NAME);
-        JAXBElement<?> roleExpression = expressionHelper.getArgument(expression.getParameter(), PARAM_ROLE, false, false, NAME);
+        boolean raw = getParamRaw(expression, input, context, result);
+
+        ActionParameterValueType resourceParameterValue = expressionHelper.getArgument(expression.getParameter(), PARAM_RESOURCE, false, false, NAME);
+        ActionParameterValueType roleParameterValue = expressionHelper.getArgument(expression.getParameter(), PARAM_ROLE, false, false, NAME);
 
         Collection<ObjectReferenceType> resources;
-        if (resourceExpression != null) {
-            Data data = scriptingExpressionEvaluator.evaluateExpression(resourceExpression, input, context, result);
+        if (resourceParameterValue != null) {
+            Data data = expressionHelper.evaluateParameter(resourceParameterValue, input, context, result);
             resources = data.getDataAsReferences(ResourceType.COMPLEX_TYPE);
         } else {
             resources = null;
         }
 
         Collection<ObjectReferenceType> roles;
-        if (roleExpression != null) {
-            Data data = scriptingExpressionEvaluator.evaluateExpression(roleExpression, input, context, result);
+        if (roleParameterValue != null) {
+            Data data = expressionHelper.evaluateParameter(roleParameterValue, input, context, result);
             roles = data.getDataAsReferences(RoleType.COMPLEX_TYPE);
         } else {
             roles = null;
@@ -91,8 +94,8 @@ public class AssignExecutor extends BaseActionExecutor {
             if (item instanceof PrismObject && ((PrismObject) item).asObjectable() instanceof FocusType) {
                 PrismObject<? extends ObjectType> prismObject = (PrismObject) item;
                 ObjectType objectType = prismObject.asObjectable();
-                operationsHelper.applyDelta(createDelta(objectType, resources, roles), context, result);
-                context.println("Modified " + item.toString());
+                operationsHelper.applyDelta(createDelta(objectType, resources, roles), operationsHelper.createExecutionOptions(raw), context, result);
+                context.println("Modified " + item.toString() + rawSuffix(raw));
             } else {
                 throw new ScriptExecutionException("Item could not be modified, because it is not a PrismObject of FocusType: " + item.toString());
             }

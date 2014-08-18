@@ -23,11 +23,9 @@ import javax.xml.namespace.QName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.evolveum.midpoint.common.refinery.RefinedObjectClassDefinition;
 import com.evolveum.midpoint.common.refinery.RefinedResourceSchema;
 import com.evolveum.midpoint.model.impl.ModelConstants;
 import com.evolveum.midpoint.model.impl.sync.SynchronizeAccountResultHandler;
-import com.evolveum.midpoint.model.impl.util.AbstractSearchIterativeResultHandler;
 import com.evolveum.midpoint.model.impl.util.AbstractSearchIterativeTaskHandler;
 import com.evolveum.midpoint.model.impl.util.Utils;
 import com.evolveum.midpoint.prism.PrismObject;
@@ -38,6 +36,7 @@ import com.evolveum.midpoint.provisioning.api.ChangeNotificationDispatcher;
 import com.evolveum.midpoint.provisioning.api.ProvisioningService;
 import com.evolveum.midpoint.provisioning.api.ResourceObjectChangeListener;
 import com.evolveum.midpoint.schema.constants.SchemaConstants;
+import com.evolveum.midpoint.schema.processor.ObjectClassComplexTypeDefinition;
 import com.evolveum.midpoint.schema.result.OperationConstants;
 import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.schema.util.ObjectQueryUtil;
@@ -107,13 +106,15 @@ public class ImportAccountsFromResourceTaskHandler extends AbstractSearchIterati
 
     public ImportAccountsFromResourceTaskHandler() {
         super(ShadowType.class, "Import from resource", OperationConstants.IMPORT_ACCOUNTS_FROM_RESOURCE);
-        objectclassPropertyDefinition = new PrismPropertyDefinition<QName>(ModelConstants.OBJECTCLASS_PROPERTY_NAME, 
-        		DOMUtil.XSD_QNAME, prismContext);
         setLogFinishInfo(true);
     }
 
     @PostConstruct
     private void initialize() {
+        // this call must not be in the constructor, because prismContext is not yet initialized at that moment
+        objectclassPropertyDefinition = new PrismPropertyDefinition<>(ModelConstants.OBJECTCLASS_PROPERTY_NAME,
+                DOMUtil.XSD_QNAME, prismContext);
+
         taskManager.registerHandler(HANDLER_URI, this);
     }
 
@@ -181,11 +182,12 @@ public class ImportAccountsFromResourceTaskHandler extends AbstractSearchIterati
 			return null;
 		}
 		
-        return createHandler(resource, runResult, task, opResult);
+        return createHandler(resource, null, runResult, task, opResult);
 	}
-	
-	private SynchronizeAccountResultHandler createHandler(ResourceType resource, TaskRunResult runResult, Task task,
-			OperationResult opResult) {
+
+    // shadowToImport - it is used to derive objectClass/intent/kind when importing a single shadow
+	private SynchronizeAccountResultHandler createHandler(ResourceType resource, PrismObject<ShadowType> shadowToImport,
+                                                          TaskRunResult runResult, Task task, OperationResult opResult) {
 		
 		RefinedResourceSchema refinedSchema;
         try {
@@ -201,17 +203,22 @@ public class ImportAccountsFromResourceTaskHandler extends AbstractSearchIterati
         	LOGGER.trace("Refined schema:\n{}", refinedSchema.debugDump());
         }
         
-        RefinedObjectClassDefinition rObjectClass = Utils.determineObjectClass(refinedSchema, task);        
-        if (rObjectClass == null) {
+        ObjectClassComplexTypeDefinition objectClass;
+        if (shadowToImport != null) {
+            objectClass = Utils.determineObjectClass(refinedSchema, shadowToImport);
+        } else {
+            objectClass = Utils.determineObjectClass(refinedSchema, task);
+        }
+        if (objectClass == null) {
             LOGGER.error("Import: No objectclass specified and no default can be determined.");
             opResult.recordFatalError("No objectclass specified and no default can be determined");
             runResult.setRunResultStatus(TaskRunResultStatus.PERMANENT_ERROR);
             return null;
         }
         
-        LOGGER.info("Start executing import from resource {}, importing object class {}", resource, rObjectClass.getTypeName());
+        LOGGER.info("Start executing import from resource {}, importing object class {}", resource, objectClass.getTypeName());
 		
-		SynchronizeAccountResultHandler handler = new SynchronizeAccountResultHandler(resource, rObjectClass, "import", 
+		SynchronizeAccountResultHandler handler = new SynchronizeAccountResultHandler(resource, objectClass, "import", 
         		task, changeNotificationDispatcher);
         handler.setSourceChannel(SchemaConstants.CHANGE_CHANNEL_IMPORT);
         handler.setForceAdd(true);
@@ -232,7 +239,7 @@ public class ImportAccountsFromResourceTaskHandler extends AbstractSearchIterati
 	protected ObjectQuery createQuery(SynchronizeAccountResultHandler handler, TaskRunResult runResult, Task task, OperationResult opResult) {
         try {
 			return ObjectQueryUtil.createResourceAndAccountQuery(handler.getResource().getOid(), 
-					handler.getRefinedObjectClass().getTypeName(), prismContext);
+					handler.getObjectClass().getTypeName(), prismContext);
 		} catch (SchemaException e) {
 			LOGGER.error("Import: Schema error during creating search query: {}",e.getMessage());
             opResult.recordFatalError("Schema error during creating search query: "+e.getMessage(),e);
@@ -261,7 +268,7 @@ public class ImportAccountsFromResourceTaskHandler extends AbstractSearchIterati
     	
     	// Create a result handler just for one object. Invoke the handle() method manually.
     	TaskRunResult runResult = new TaskRunResult();
-		SynchronizeAccountResultHandler resultHandler = createHandler(resource.asObjectable(), runResult, task, parentResult);
+		SynchronizeAccountResultHandler resultHandler = createHandler(resource.asObjectable(), shadow, runResult, task, parentResult);
 		if (resultHandler == null) {
 			return false;
 		}

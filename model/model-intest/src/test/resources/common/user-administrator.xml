@@ -53,6 +53,7 @@
 <!-- 				</enc:EncryptedData> -->
 <!-- 			</value> -->
 		</password>
+		
 	</credentials>
 	<assignment>
 		<targetRef oid="00000000-0000-0000-0000-000000000004" type="c:RoleType"/>

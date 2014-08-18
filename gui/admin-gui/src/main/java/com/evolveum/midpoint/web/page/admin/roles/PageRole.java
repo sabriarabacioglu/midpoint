@@ -182,6 +182,9 @@ public class PageRole extends PageAdminRoles{
         try {
             if (!isEditing()) {
                 RoleType r = new RoleType();
+                ActivationType defaultActivation = new ActivationType();
+                defaultActivation.setAdministrativeStatus(ActivationStatusType.ENABLED);
+                r.setActivation(defaultActivation);
                 getMidpointApplication().getPrismContext().adopt(r);
                 role = r.asPrismObject();
             } else {
@@ -334,6 +337,8 @@ public class PageRole extends PageAdminRoles{
     private void savePerformed(AjaxRequestTarget target){
         OperationResult result = new OperationResult(OPERATION_SAVE_ROLE);
         try {
+            WebMiscUtil.revive(model, getPrismContext());
+
             ModelService modelService = getModelService();
 
             PrismObject<RoleType> newRole = model.getObject();

@@ -24,62 +24,34 @@
    xmlns:t='http://prism.evolveum.com/xml/ns/public/types-3'>
 
 
-        <name>Default User Template 3</name>
+        <name>Default User Template AD</name>
 
         <description>
             User Template Object.
             This object is used when creating a new user or changing an existing user, to set it up as needed.
         </description>
         
-        <mapping>
-            <description>
-                Property mapping.
-                Defines how properties of user object are set up.
-                This specific definition sets a full name as a concatenation
-                of givenName and familyName.
-            </description>
-            <strength>weak</strength>
-            <source>
-                <path>$user/givenName</path>
-            </source>
-            <source>
-                <path>$user/familyName</path>
-            </source>
-            <expression>
-                <script>
-                    <language>http://midpoint.evolveum.com/xml/ns/public/expression/language#Groovy</language>
-                    <code>
-                        givenName + ' ' + familyName
-                    </code>
-                </script>
-            </expression>
-            <target>
-                <path>$user/fullName</path>
-            </target>
-        </mapping>
+      
         
-         <mapping>
-            <description>
-                Property mapping.
-                Defines how properties of user object are set up.
-                This specific definition sets a nickname as a concatenation
-                of 'nick_' and givenName.
-            </description>
-            <strength>weak</strength>
-            <source>
-                <path>$user/givenName</path>
-            </source>
-            <expression>
-                <script>
-                    <language>http://midpoint.evolveum.com/xml/ns/public/expression/language#Groovy</language>
-                    <code>
-                        'nick_' + givenName
-                    </code>
-                </script>
-            </expression>
-            <target>
-                <path>$user/nickName</path>
-            </target>
-        </mapping>
-
+        <mapping>
+    	<name>AD assignment</name>
+    	<authoritative>true</authoritative>
+    	<source>
+    		<path>extension/ext:responsibility</path>
+    	</source>
+    	<expression>
+            <assignmentTargetSearch>
+            	<targetType>c:ResourceType</targetType>
+        		<oid>ef2bc95b-76e0-48e2-86d6-3d4f02d3fafe</oid>
+            </assignmentTargetSearch>    	
+    	</expression>
+    	<target>
+    		<path>assignment</path>
+    	</target>
+    	<condition>
+    		<script>
+    			<code>responsibility as Boolean</code>
+    		</script>
+    	</condition>
+    </mapping>
     </objectTemplate>

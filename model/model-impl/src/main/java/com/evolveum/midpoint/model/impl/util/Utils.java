@@ -54,6 +54,7 @@ import com.evolveum.midpoint.provisioning.api.ProvisioningService;
 import com.evolveum.midpoint.repo.api.RepositoryService;
 import com.evolveum.midpoint.schema.constants.ExpressionConstants;
 import com.evolveum.midpoint.schema.constants.SchemaConstants;
+import com.evolveum.midpoint.schema.processor.ObjectClassComplexTypeDefinition;
 import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.task.api.Task;
 import com.evolveum.midpoint.util.DOMUtil;
@@ -279,25 +280,43 @@ public final class Utils {
 	        refVal.setOid(oid);
 	        result.recordSuccessIfUnknown();
 	    }
-	    
-	    public static RefinedObjectClassDefinition determineObjectClass(RefinedResourceSchema refinedSchema, Task task) {
+
+        public static ObjectClassComplexTypeDefinition determineObjectClass(RefinedResourceSchema refinedSchema, Task task) {
+
+            QName objectclass = null;
+            PrismProperty<QName> objectclassProperty = task.getExtensionProperty(ModelConstants.OBJECTCLASS_PROPERTY_NAME);
+            if (objectclassProperty != null) {
+                objectclass = objectclassProperty.getValue().getValue();
+            }
+
+            ShadowKindType kind = null;
+            PrismProperty<ShadowKindType> kindProperty = task.getExtensionProperty(ModelConstants.KIND_PROPERTY_NAME);
+            if (kindProperty != null) {
+                kind = kindProperty.getValue().getValue();
+            }
+
+            String intent = null;
+            PrismProperty<String> intentProperty = task.getExtensionProperty(ModelConstants.INTENT_PROPERTY_NAME);
+            if (intentProperty != null) {
+                intent = intentProperty.getValue().getValue();
+            }
+
+            return determineObjectClassInternal(refinedSchema, objectclass, kind, intent, task);
+        }
+
+        public static ObjectClassComplexTypeDefinition determineObjectClass(RefinedResourceSchema refinedSchema, PrismObject<ShadowType> shadowToImport) {
+            ShadowType s = shadowToImport.asObjectable();
+            return determineObjectClassInternal(refinedSchema, s.getObjectClass(), s.getKind(), s.getIntent(), s);
+        }
+
+	    private static ObjectClassComplexTypeDefinition determineObjectClassInternal(
+                RefinedResourceSchema refinedSchema, QName objectclass, ShadowKindType kind, String intent, Object source) {
 	    	
-	    	QName objectclass = null;
-	    	PrismProperty<QName> objectclassProperty = task.getExtensionProperty(ModelConstants.OBJECTCLASS_PROPERTY_NAME);
-	        if (objectclassProperty != null) {
-	            objectclass = objectclassProperty.getValue().getValue();
-	        }
-	        
-	        ShadowKindType kind = null;
-	        PrismProperty<ShadowKindType> kindProperty = task.getExtensionProperty(ModelConstants.KIND_PROPERTY_NAME);
-	        if (kindProperty != null) {
-	        	kind = kindProperty.getValue().getValue();
-	        }
-	        
-	        String intent = null;
-	        PrismProperty<String> intentProperty = task.getExtensionProperty(ModelConstants.INTENT_PROPERTY_NAME);
-	        if (intentProperty != null) {
-	        	intent = intentProperty.getValue().getValue();
+	        if (kind == null && intent == null && objectclass != null) {
+	        	// Return generic object class definition from resource schema. No kind/intent means that we want
+	        	// to process all kinds and intents in the object class.
+	        	ObjectClassComplexTypeDefinition objectClassDefinition = refinedSchema.findObjectClassDefinition(objectclass);
+	        	return objectClassDefinition;
 	        }
 	        
 	        RefinedObjectClassDefinition refinedObjectClassDefinition;
@@ -312,7 +331,7 @@ public final class Utils {
 	        			new Object[]{refinedObjectClassDefinition, objectclass});
 	        } else {
 	        	if (LOGGER.isTraceEnabled()) {
-                    LOGGER.debug("No kind or objectclass specified in the task {}, using default values", task);
+                    LOGGER.debug("No kind or objectclass specified in {}, using default values", source);
                 }
 	        	refinedObjectClassDefinition = refinedSchema.getRefinedDefinition(ShadowKindType.ACCOUNT, (String)null);
 	        	LOGGER.trace("Determined refined object class {} by using default ACCOUNT kind",

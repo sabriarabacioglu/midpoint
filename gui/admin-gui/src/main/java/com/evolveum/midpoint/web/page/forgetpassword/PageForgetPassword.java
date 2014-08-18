@@ -25,7 +25,6 @@ import com.evolveum.midpoint.prism.query.ObjectFilter;
 import com.evolveum.midpoint.prism.query.ObjectQuery;
 import com.evolveum.midpoint.prism.schema.SchemaRegistry;
 import com.evolveum.midpoint.schema.result.OperationResult;
-import com.evolveum.midpoint.web.component.atmosphere.NotifyMessage;
 import com.evolveum.midpoint.web.component.menu.top.TopMenuBar;
 import com.evolveum.midpoint.web.component.menu.top.LocalePanel;
 import com.evolveum.midpoint.web.component.util.LoadableModel;
@@ -35,6 +34,7 @@ import com.evolveum.midpoint.web.page.admin.home.PageMyPasswords;
 import com.evolveum.midpoint.web.page.admin.home.dto.AssignmentItemDto;
 import com.evolveum.midpoint.web.page.admin.home.dto.MyPasswordsDto;
 import com.evolveum.midpoint.web.page.admin.home.dto.PasswordAccountDto;
+import com.evolveum.midpoint.web.page.admin.users.PageUser;
 import com.evolveum.midpoint.web.page.forgetpassword.dto.ForgetPasswordDto;
 import com.evolveum.midpoint.web.security.MidPointAuthWebSession;
 import com.evolveum.midpoint.web.security.SecurityUtils;
@@ -110,17 +110,16 @@ import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
 
 
 
+import com.sun.tools.xjc.reader.xmlschema.BGMBuilder;
+
 import org.apache.commons.lang.StringUtils;
-import org.apache.tools.mail.MailMessage;
 import org.apache.wicket.RestartResponseException;
-import org.apache.wicket.atmosphere.EventBus;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.PasswordTextField;
 import org.apache.wicket.markup.html.form.RequiredTextField;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
-import org.jruby.RubyProcess.Sys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -224,10 +223,16 @@ public class PageForgetPassword extends PageBase {
 				//	PageForgetPasswordQuestions pageForgetPasswordQuestions =new PageForgetPasswordQuestions();
 			//		pageForgetPasswordQuestions.setUserTypeObject(user);
 
-			setResponsePage(PageResetPasswordSuccess.class);
-
+			
+					/*
+					setResponsePage(PageResetPasswordSuccess.class);
+			
 					resetPassword(user);
+					*/
 					
+					PageParameters parameters = new PageParameters();
+			        parameters.add(OnePageParameterEncoder.PARAMETER, user.getOid());
+			        setResponsePage(PageForgetPasswordQuestions.class, parameters);
 
 				}
 				else{

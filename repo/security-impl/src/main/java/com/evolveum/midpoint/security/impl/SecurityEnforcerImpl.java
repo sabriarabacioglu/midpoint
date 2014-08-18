@@ -168,6 +168,11 @@ public class SecurityEnforcerImpl implements SecurityEnforcer {
 	private <O extends ObjectType, T extends ObjectType> boolean isAuthorizedInternal(MidPointPrincipal midPointPrincipal, String operationUrl, AuthorizationPhaseType phase,
 			PrismObject<O> object, ObjectDelta<O> delta, PrismObject<T> target, OwnerResolver ownerResolver)
 			throws SchemaException {	
+		
+		if (AuthorizationConstants.AUTZ_NO_ACCESS_URL.equals(operationUrl)){
+			return false;
+		}
+		
 		if (phase == null) {
 			throw new IllegalArgumentException("No phase");
 		}
@@ -181,6 +186,7 @@ public class SecurityEnforcerImpl implements SecurityEnforcer {
 				if (authority instanceof Authorization) {
 					Authorization autz = (Authorization)authority;
 					LOGGER.trace("Evaluating authorization {}", autz);
+					
 					// First check if the authorization is applicable.
 					
 					// action
@@ -260,7 +266,7 @@ public class SecurityEnforcerImpl implements SecurityEnforcer {
 						@Override
 						public void visit(Visitable visitable) {
 							ItemPath itemPath = getPath(visitable);
-							if (itemPath != null) {
+							if (itemPath != null && !itemPath.isEmpty()) {
 								if (!isInList(itemPath, allowedItems)) {
 									LOGGER.trace("  DENY operation because item {} in the delta is not allowed", itemPath);
 									itemDecision.setValue(false);
@@ -274,7 +280,7 @@ public class SecurityEnforcerImpl implements SecurityEnforcer {
 						@Override
 						public void visit(Visitable visitable) {
 							ItemPath itemPath = getPath(visitable);
-							if (itemPath != null) {
+							if (itemPath != null && !itemPath.isEmpty()) {
 								if (!isInList(itemPath, allowedItems)) {
 									LOGGER.trace("  DENY operation because item {} in the object is not allowed", itemPath);
 									itemDecision.setValue(false);
@@ -307,7 +313,7 @@ public class SecurityEnforcerImpl implements SecurityEnforcer {
 	private boolean isInList(ItemPath itemPath, Collection<ItemPath> allowedItems) {
 		boolean itemAllowed = false;
 		for (ItemPath allowedPath: allowedItems) {
-			if (allowedPath.equivalent(itemPath)) {
+			if (allowedPath.isSubPathOrEquivalent(itemPath)) {
 				itemAllowed = true;
 				break;
 			}

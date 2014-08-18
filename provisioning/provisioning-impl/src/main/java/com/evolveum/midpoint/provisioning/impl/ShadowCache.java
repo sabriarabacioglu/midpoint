@@ -411,7 +411,7 @@ public abstract class ShadowCache {
 		
 		accessChecker.checkModify(resource, shadow, modifications, objectClassDefinition, parentResult);
 
-		preprocessEntitlements(modifications, resource, parentResult);
+		preprocessEntitlements(modifications, resource, "delta for shadow "+oid, parentResult);
 
 		modifications = beforeModifyOnResource(shadow, options, modifications);
 
@@ -649,7 +649,7 @@ public abstract class ShadowCache {
 					ItemDefinition definition = valueFilter.getDefinition();
 					if (definition == null) {
 						ItemPath itemPath = valueFilter.getFullPath();
-						if (attributesPath.equals(valueFilter.getParentPath())) {
+						if (attributesPath.equivalent(valueFilter.getParentPath())) {
 							QName attributeName = valueFilter.getElementName();
 							ResourceAttributeDefinition attributeDefinition = objectClassDef.findAttributeDefinition(attributeName);
 							if (attributeDefinition == null) {
@@ -986,10 +986,10 @@ public abstract class ShadowCache {
 		ItemPath resourceRefPath = new ItemPath(ShadowType.F_RESOURCE_REF);
 		for (ObjectFilter f : conditions){
 			if (f instanceof EqualFilter){
-				if (objectClassPath.equals(((EqualFilter) f).getFullPath())){
+				if (objectClassPath.equivalent(((EqualFilter) f).getFullPath())){
 					continue;
 				}
-				if (resourceRefPath.equals(((EqualFilter) f).getFullPath())){
+				if (resourceRefPath.equivalent(((EqualFilter) f).getFullPath())){
 					continue;
 				}
 				
@@ -1381,7 +1381,7 @@ public abstract class ShadowCache {
 		} else if (delta.isModify()) {
 			ItemPath attributesPath = new ItemPath(ShadowType.F_ATTRIBUTES);
 			for(ItemDelta<?> modification: delta.getModifications()) {
-				if (modification.getDefinition() == null && attributesPath.equals(modification.getParentPath())) {
+				if (modification.getDefinition() == null && attributesPath.equivalent(modification.getParentPath())) {
 					QName attributeName = modification.getElementName();
 					ResourceAttributeDefinition attributeDefinition = objectClassDefinition.findAttributeDefinition(attributeName);
 					if (attributeDefinition == null) {
@@ -1604,8 +1604,7 @@ public abstract class ShadowCache {
 					ShadowAssociationType shadowAssociationType = associationCVal.asContainerable();
 					QName associationName = shadowAssociationType.getName();
 					RefinedAssociationDefinition rEntitlementAssociation = objectClassDefinition.findEntitlementAssociation(associationName);
-					String entitlementIntent = rEntitlementAssociation.getIntent();
-					RefinedObjectClassDefinition entitlementObjectClassDef = refinedSchema.getRefinedDefinition(ShadowKindType.ENTITLEMENT, entitlementIntent);
+					RefinedObjectClassDefinition entitlementObjectClassDef = refinedSchema.getRefinedDefinition(ShadowKindType.ENTITLEMENT, rEntitlementAssociation.getIntents());
 					
 					PrismObject<ShadowType> entitlementShadow = (PrismObject<ShadowType>) identifierContainer.getUserData(ResourceObjectConverter.FULL_SHADOW_KEY);
 					if (entitlementShadow == null) {
@@ -1637,13 +1636,13 @@ public abstract class ShadowCache {
 	 * Makes sure that all the entitlements have identifiers in them so this is usable by the
 	 * ResourceObjectConverter.
 	 */
-	private void preprocessEntitlements(PrismObject<ShadowType> shadow,  final ResourceType resource,
+	private void preprocessEntitlements(final PrismObject<ShadowType> shadow,  final ResourceType resource,
 			final OperationResult result) throws SchemaException, ObjectNotFoundException, ConfigurationException {
 		Visitor visitor = new Visitor() {
 			@Override
 			public void visit(Visitable visitable) {
 				try {
-					preprocessEntitlement((PrismContainerValue<ShadowAssociationType>)visitable, resource, result);
+					preprocessEntitlement((PrismContainerValue<ShadowAssociationType>)visitable, resource, shadow.toString(), result);
 				} catch (SchemaException e) {
 					throw new TunnelException(e);
 				} catch (ObjectNotFoundException e) {
@@ -1676,12 +1675,12 @@ public abstract class ShadowCache {
 	 * ResourceObjectConverter.
 	 */	
 	private void preprocessEntitlements(Collection<? extends ItemDelta> modifications, final ResourceType resource, 
-			final OperationResult result) throws SchemaException, ObjectNotFoundException, ConfigurationException {
+			final String desc, final OperationResult result) throws SchemaException, ObjectNotFoundException, ConfigurationException {
 		Visitor visitor = new Visitor() {
 			@Override
 			public void visit(Visitable visitable) {
 				try {
-					preprocessEntitlement((PrismContainerValue<ShadowAssociationType>)visitable, resource, result);
+					preprocessEntitlement((PrismContainerValue<ShadowAssociationType>)visitable, resource, desc, result);
 				} catch (SchemaException e) {
 					throw new TunnelException(e);
 				} catch (ObjectNotFoundException e) {
@@ -1710,7 +1709,7 @@ public abstract class ShadowCache {
 	}
 	
 
-	private void preprocessEntitlement(PrismContainerValue<ShadowAssociationType> association, ResourceType resource, OperationResult result) 
+	private void preprocessEntitlement(PrismContainerValue<ShadowAssociationType> association, ResourceType resource, String desc, OperationResult result) 
 			throws SchemaException, ObjectNotFoundException, ConfigurationException {
 		PrismContainer<Containerable> identifiersContainer = association.findContainer(ShadowAssociationType.F_IDENTIFIERS);
 		if (identifiersContainer != null && !identifiersContainer.isEmpty()) {
@@ -1725,7 +1724,7 @@ public abstract class ShadowCache {
 		try {
 			repoShadow = repositoryService.getObject(ShadowType.class, associationType.getShadowRef().getOid(), null, result);
 		} catch (ObjectNotFoundException e) {
-			throw new ObjectNotFoundException(e.getMessage()+" while resolving entitlement association OID in "+association, e);
+			throw new ObjectNotFoundException(e.getMessage()+" while resolving entitlement association OID in "+association+" in "+desc, e);
 		}
 		applyAttributesDefinition(repoShadow, resource);
 		transplantIdentifiers(association, repoShadow);

@@ -79,6 +79,7 @@ public class PageDebugView extends PageAdminConfiguration {
     private IModel<ObjectViewDto> model;
     private AceEditor editor;
     private final IModel<Boolean> encrypt = new Model<Boolean>(true);
+    private final IModel<Boolean> saveAsRaw = new Model<>(true);
     private final IModel<Boolean> validateSchema = new Model<Boolean>(false);
 
     public PageDebugView() {
@@ -116,7 +117,9 @@ public class PageDebugView extends PageAdminConfiguration {
         try {
             MidPointApplication application = PageDebugView.this.getMidpointApplication();
 
-            Collection<SelectorOptions<GetOperationOptions>> options = SelectorOptions.createCollection(GetOperationOptions.createRaw());
+            GetOperationOptions rootOptions = GetOperationOptions.createRaw();
+            rootOptions.setResolveNames(true);
+            Collection<SelectorOptions<GetOperationOptions>> options = SelectorOptions.createCollection(rootOptions);
             // FIXME: ObjectType.class will not work well here. We need more specific type.
             //todo on page debug list create page params, put there oid and class for object type and send that to this page....read it here
             Class type = ObjectType.class;
@@ -167,6 +170,13 @@ public class PageDebugView extends PageAdminConfiguration {
 			@Override
 			protected void onUpdate(AjaxRequestTarget target) {
 			}
+        });
+
+        mainForm.add(new AjaxCheckBox("saveAsRaw", saveAsRaw) {
+
+            @Override
+            protected void onUpdate(AjaxRequestTarget target) {
+            }
         });
 
         mainForm.add(new AjaxCheckBox("validateSchema", validateSchema) {
@@ -256,10 +266,7 @@ public class PageDebugView extends PageAdminConfiguration {
         try {
 
             PrismObject<ObjectType> oldObject = dto.getObject();
-            if (oldObject.getPrismContext() == null) {
-            	LOGGER.warn("No prism context in old object {}, adding it", oldObject);
-            	oldObject.setPrismContext(getPrismContext());
-            }
+            oldObject.revive(getPrismContext());
 
             Holder<PrismObject<ObjectType>> objectHolder = new Holder<PrismObject<ObjectType>>(null);
             validateObject(editor.getModel().getObject(), objectHolder, validateSchema.getObject(), result);
@@ -271,7 +278,7 @@ public class PageDebugView extends PageAdminConfiguration {
 
                 if (delta.getPrismContext() == null) {
                 	LOGGER.warn("No prism context in delta {} after diff, adding it", delta);
-                	delta.setPrismContext(getPrismContext());
+                	delta.revive(getPrismContext());
                 }
                 
                 //quick fix for now (MID-1910), maybe it should be somewhere in model..
@@ -280,8 +287,10 @@ public class PageDebugView extends PageAdminConfiguration {
                 }
 
                 Collection<ObjectDelta<? extends ObjectType>> deltas = (Collection) MiscUtil.createCollection(delta);
-                ModelExecuteOptions options = ModelExecuteOptions.createRaw();
-
+                ModelExecuteOptions options = new ModelExecuteOptions();
+                if (saveAsRaw.getObject()) {
+                    options.setRaw(true);
+                }
                 if(!encrypt.getObject()) {
                 	options.setNoCrypt(true);
                 }

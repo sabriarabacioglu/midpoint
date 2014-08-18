@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 Evolveum
+ * Copyright (c) 2010-2014 Evolveum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import com.evolveum.midpoint.util.exception.*;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.AssignmentType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectPolicyConfigurationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.FocusType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ValuePolicyType;
@@ -55,6 +56,7 @@ public class LensFocusContext<O extends ObjectType> extends LensElementContext<O
 	private ObjectDeltaWaves<O> secondaryDeltas = new ObjectDeltaWaves<O>();
 	
 	transient private ValuePolicyType orgPasswordPolicy;
+	transient private ObjectPolicyConfigurationType objectPolicyConfigurationType;
 	
 	private int getProjectionWave() {
 		return getLensContext().getProjectionWave();
@@ -67,7 +69,14 @@ public class LensFocusContext<O extends ObjectType> extends LensElementContext<O
 	public ValuePolicyType getOrgPasswordPolicy() {
 		return orgPasswordPolicy;
 	}
-	
+
+	public ObjectPolicyConfigurationType getObjectPolicyConfigurationType() {
+		return objectPolicyConfigurationType;
+	}
+
+	public void setObjectPolicyConfigurationType(ObjectPolicyConfigurationType objectPolicyConfigurationType) {
+		this.objectPolicyConfigurationType = objectPolicyConfigurationType;
+	}
 
 	public LensFocusContext(Class<O> objectTypeClass, LensContext<O> lensContext) {
 		super(objectTypeClass, lensContext);

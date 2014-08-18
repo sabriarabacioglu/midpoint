@@ -46,7 +46,7 @@
             <a href="https://wiki.evolveum.com/display/midPoint/Data+Model">https://wiki.evolveum.com/display/midPoint/Data+Model</a>
             for more details.
 
-            <p>Version: 3.0-SNAPSHOT</p>
+            <p>Version: 3.1-SNAPSHOT</p>
 
             <p>Recommended namespace prefix: (default), c</p>
         </xsd:documentation>
@@ -2590,9 +2590,9 @@
                     <xsd:documentation>
                         <p>
                         Reference to the tenant to which this assignment refers. This is an argument to the target of this
-                        assignment. E.g. is if frequenty used to parametrize the role which is assigned by this assignment.
+                        assignment. E.g. is if frequently used to parametrize the role which is assigned by this assignment.
                         However the exact interpretation of this value depends on the logic of the target role. It may be
-                        significat or it may be entirelly ignored.
+                        significant or it may be entirely ignored.
                         </p>
                     </xsd:documentation>
                     <xsd:appinfo>
@@ -2610,7 +2610,7 @@
     <xsd:complexType name="MappingsType">
         <xsd:annotation>
             <xsd:documentation>
-                Genric set of mappings.
+                Generic set of mappings.
             </xsd:documentation>
             <xsd:appinfo>
                 <a:container/>
@@ -2792,6 +2792,37 @@
             	</xsd:annotation>
             </xsd:element>
             
+            <xsd:element name="lockoutStatus" type="tns:LockoutStatusType" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        This defines the state of user or account lock-out. Lock-out means that the account
+                        was temporarily disabled due to failed login attempts or a similar abuse attempt.
+                        
+                        This value is usualy set by the resource (or midpoint internal authentication code).
+                        It is unlikely that it can be set to the "locked" value. However it usually can be used
+                        to unlock the account by setting this property to "normal" value.
+                    </xsd:documentation>
+                    <xsd:appinfo>
+                        <a:displayName>Lock-out Status</a:displayName>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:element>
+            
+            <xsd:element name="lockoutExpirationTimestamp" type="xsd:dateTime" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Timestamp of a moment when account lockout expires and the account will
+                        be normally usable again.
+                        
+                        This is only an informational value. It should be considered as read-only
+                        for most cases. It only makes sense if the lockoutStatus is not in the "normal" state.
+                    </xsd:documentation>
+                    <xsd:appinfo>
+                        <a:displayName>Lock-out Expiration</a:displayName>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:element>
+            
         </xsd:sequence>
         <xsd:attribute name="id" type="xsd:long" use="optional"/>
     </xsd:complexType>
@@ -2904,6 +2935,40 @@
                 </xsd:annotation>
             </xsd:enumeration>
              </xsd:restriction>
+    </xsd:simpleType>
+    
+    <xsd:simpleType name="LockoutStatusType">
+        <xsd:annotation>
+            <xsd:documentation>
+                This defines the state of account lock-out. Lock-out means that the account
+                was temporarily disabled due to failed login attempts or a similar abuse attempt.
+            </xsd:documentation>
+            <xsd:appinfo>
+                <jaxb:typesafeEnumClass/>
+            </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="normal">
+                <xsd:annotation>
+                	<xsd:documentation>
+                		Account is in normal (unlocked state). It is usable without limitations.
+                	</xsd:documentation>
+                    <xsd:appinfo>
+                        <jaxb:typesafeEnumMember name="NORMAL"/>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="locked">
+                <xsd:annotation>
+                	<xsd:documentation>
+                		The account has been locked. Log-in to the account is temporarily disabled.
+                	</xsd:documentation>
+                    <xsd:appinfo>
+                        <jaxb:typesafeEnumMember name="LOCKED"/>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
     </xsd:simpleType>
 
     <xsd:complexType name="ResourceType">
@@ -3177,7 +3242,7 @@
             <xsd:documentation>
                 Defines a type from the resource schema (object class)
                 that can be used for creating accounts, entitlements and possible other concepts.
-                This is abstract supertype for other types.
+                This is abstract supertype for other types. 
             </xsd:documentation>
         </xsd:annotation>
         <xsd:sequence>
@@ -3185,12 +3250,13 @@
         	<xsd:element name="intent" type="xsd:string" minOccurs="0"/>
             <xsd:element ref="tns:displayName" minOccurs="0" maxOccurs="1"/>
             <xsd:element ref="tns:description" minOccurs="0"/>
-            <xsd:element name="default" type="xsd:boolean" minOccurs="0" default="false">
+            <xsd:element name="default" type="xsd:boolean" minOccurs="0">
                 <xsd:annotation>
                     <xsd:documentation>
                         Specifies whether this type is the default type for the resource.
-                        Only one type for each class can be default. Setting this flag for more than one type is
-                        an error.
+                        Only one type for each class can be default. Setting this flag to true for more than one type is
+                        an error. If the flag is not set, the value is inherited from resource schema. If the resource 
+                        schema does not have this flag set, the default value is false.
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
@@ -3350,9 +3416,9 @@
    					<xsd:element name="order" type="xsd:int" minOccurs="0" default="0">
    						<xsd:annotation>
    							<xsd:documentation>
-   								Specifies the order in which the dependency is applied. Lower-order dependecies
+   								Specifies the order in which the dependency is applied. Lower-order dependencies
    								are applied before higher-order dependencies. Dependencies with the same order
-   								are applied at the same time. There must be no circular dependency fromed from
+   								are applied at the same time. There must be no circular dependency formed from
    								dependencies of the same order.
    							</xsd:documentation>
    						</xsd:annotation>
@@ -3376,9 +3442,9 @@
                 <xsd:annotation>
                 	<xsd:documentation>
                 		If the object that we depend on is not provisioned then the dependent object will
-                		not be provisioned either. Attempt to provision it will end up with and error.
+                		not be provisioned either. Attempt to provision it will end up with an error.
                 		If the object that we depend on is being provisioned in the same operation (context) as
-                		the dependent object then they will be provisioned in order: independed first, dependent second.
+                		the dependent object then they will be provisioned in order: independent first, dependent second.
                 		Proper inbound-template-outbound sequence of mapping will be executed between the provisionings.
                 	</xsd:documentation>
                     <xsd:appinfo>
@@ -3390,13 +3456,13 @@
                 <xsd:annotation>
                 	<xsd:documentation>
                 		If the object that we depend on is being provisioned in the same operation (context) as
-                		the dependent object then they will be provisioned in order: independed first, dependent second.
+                		the dependent object then they will be provisioned in order: independent first, dependent second.
                 		Proper inbound-template-outbound sequence of mapping will be executed between the provisionings.
                 		But no error is thrown if the dependent object is provisioned without the other object.
                 		If both objects are being provisioned in the same operation (context) and provisioning of the
                 		object that we depend on fails the provisioning of the dependent object will be skipped.
                 		The relaxed strictness guarantees ordering in case that both objects are being provisioned 
-                		in the same operation (context) and delaying of the operation on dependend resource in case
+                		in the same operation (context) and delaying of the operation on dependent resource in case
                 		the operation on independent resource fails.
                 	</xsd:documentation>
                     <xsd:appinfo>
@@ -3408,12 +3474,12 @@
                 <xsd:annotation>
                 	<xsd:documentation>
                 		If the object that we depend on is being provisioned in the same operation (context) as
-                		the dependent object then they will be provisioned in order: independed first, dependent second.
+                		the dependent object then they will be provisioned in order: independent first, dependent second.
                 		Proper inbound-template-outbound sequence of mapping will be executed between the provisionings.
                 		But NO ERROR is thrown if the dependent object is provisioned without the other object. Not even if
-                		they are provisioned in the same operation (context) an the independend object fails.
+                		they are provisioned in the same operation (context) an the independent object fails.
                 		The lax strictness only guarantees ordering in case that both objects are being (successfully) provisioned.
-                		It does not guaratee anything else.
+                		It does not guarantee anything else.
                 	</xsd:documentation>
                     <xsd:appinfo>
                         <jaxb:typesafeEnumMember name="LAX"/>
@@ -3914,11 +3980,29 @@
         	<xsd:extension base="tns:ResourceItemDefinitionType">
 		     	<xsd:sequence>
 		     		<xsd:element name="kind" type="tns:ShadowKindType" minOccurs="0"></xsd:element>
-		     		<xsd:element name="intent" type="xsd:string" minOccurs="0"></xsd:element>
+		     		<xsd:element name="intent" type="xsd:string" minOccurs="0" maxOccurs="unbounded">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                A set of intents corresponding to this association type.
+                                NOTE: All of them must point to the same resource ObjectClass!
+                            </xsd:documentation>
+                        </xsd:annotation>
+		     		</xsd:element>
 		     		<xsd:element name="direction" type="tns:ResourceObjectAssociationDirectionType"  minOccurs="0"></xsd:element>
 		     		<xsd:element name="associationAttribute" type="xsd:QName"  minOccurs="0"></xsd:element>
 		     		<xsd:element name="valueAttribute" type="xsd:QName"  minOccurs="0"></xsd:element>
-		     		<xsd:element name="explicitReferentialIntegrity" type="xsd:boolean"  minOccurs="0" default="true"></xsd:element>
+		     		<xsd:element name="explicitReferentialIntegrity" type="xsd:boolean"  minOccurs="0" default="true">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Whether you require midPoint to provide referential integrity for object-to-subject associations.
+
+                                Used for resources that do not provide referential integrity by themselves, e.g. for OpenDJ with
+                                default settings (i.e. with referential integrity plugin turned off).
+
+                                For resources having referential integrity, e.g. for Active Directory, set this parameter to false.
+                            </xsd:documentation>
+                        </xsd:annotation>
+		     		</xsd:element>
 		     	</xsd:sequence>
 		     </xsd:extension>
 	     </xsd:complexContent>
@@ -4590,20 +4674,20 @@
             <xsd:element ref="tns:description" minOccurs="0"/>
             <!-- This needs to be a sequence of optional elements instead of choice due to a JAXB "feature" that generates XML not valid with the schema. -->
            	<xsd:element name="path" type="t:ItemPathType" minOccurs="0"/>
-               <xsd:element name="objectRef" type="tns:ObjectReferenceType" minOccurs="0">
-                   <xsd:annotation>
-                       <xsd:documentation>
-                           TODO
-                       </xsd:documentation>
-                   </xsd:annotation>
-               </xsd:element>
-               <xsd:element ref="tns:value" minOccurs="0">
-                   <xsd:annotation>
-                       <xsd:documentation>
-                           TODO
-                       </xsd:documentation>
-                   </xsd:annotation>
-               </xsd:element>
+            <xsd:element name="objectRef" type="tns:ObjectReferenceType" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        TODO
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element ref="tns:value" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        TODO
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 
@@ -4656,6 +4740,7 @@
             </xsd:documentation>
         </xsd:annotation>
         <xsd:sequence>
+        	<xsd:element name="mode" type="tns:GenerateExpressionEvaluatorModeType" minOccurs="0" default="policy"/>
         	<xsd:element name="valuePolicyRef" type="tns:ObjectReferenceType" minOccurs="0">
         		<xsd:annotation>
 	                <xsd:documentation>
@@ -4670,6 +4755,43 @@
     </xsd:complexType>
 
     <xsd:element name="generate" type="tns:GenerateExpressionEvaluatorType" substitutionGroup="tns:expressionEvaluator"/>
+    
+    <xsd:simpleType name="GenerateExpressionEvaluatorModeType">
+        <xsd:annotation>
+            <xsd:documentation>
+                Value generator mode.
+            </xsd:documentation>
+            <xsd:appinfo>
+                <jaxb:typesafeEnumClass/>
+            </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="policy">
+                <xsd:annotation>
+                	<xsd:documentation>
+                		Generator generates the value according to the applicable value policy (e.g. a password policy).
+                		The it generates a random string that satisfies the policy. If no policy can be determined then
+                		a reasonable default policy is assumed.
+                	</xsd:documentation>
+                    <xsd:appinfo>
+                        <jaxb:typesafeEnumMember name="POLICY"/>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="uuid">
+                <xsd:annotation>
+                	<xsd:documentation>
+                		The generator generates a random Universally Unique Identifier (UUID) string.
+                		The generated UUID is currently version 4 and complies with ISO/IEC 11578:1996, but this
+                		can change in the future.
+                	</xsd:documentation>
+                    <xsd:appinfo>
+                        <jaxb:typesafeEnumMember name="UUID"/>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
 
     <xsd:element name="script" type="tns:ScriptExpressionEvaluatorType" substitutionGroup="tns:expressionEvaluator"/>
 
@@ -4961,18 +5083,18 @@
                         <p>Flag indicating if this synchronization specification is enabled. If it is not,
                         then the system will ignore this definition.
                         If enabled, the synchronization should start with most recent change
-                        after enablinh synchronization. It will NOT pull in even the changes that
+                        after enabling synchronization. It will NOT pull in even the changes that
                         were done during disabled synchronization.</p>
 
                         <p>If this flag is not present the synchronization is assumed to be enabled.
-                        This flag is meant to act as a tool to temprarily disable synchronizatoin without loosing the
+                        This flag is meant to act as a tool to temporarily disable synchronization without loosing the
                         configuration and and state or for forcing the synchronization engine to "skip" some changes.</p>
                         
                         <p>Note that this is different than disabling/deleting the synchronization task. If the task
-                        is stopped, midPont will not poll for changes at all. This means that the changes will
+                        is stopped, midPoint will not poll for changes at all. This means that the changes will
                         still be "pending" on the resource and once the task is enabled it will pull such changes.
                         On the other hand, disabling synchronization using this flag and leaving the task running will
-                        "acknowldge" all changes without doing anything.</p>
+                        "acknowledge" all changes without doing anything.</p>
                         
                         <p>Also note that disabling synchronization using this flag will disable all the flavors, e.g.
                         it will also disable import from resource.</p>
@@ -5176,7 +5298,7 @@
             			This overrides other template definitions (system global, resource).
             		</xsd:documentation>
             		<xsd:appinfo>
-                    	<a:objectReferenceTargetType>tns:ObjetcTemplateType</a:objectReferenceTargetType>
+                    	<a:objectReferenceTargetType>tns:ObjectTemplateType</a:objectReferenceTargetType>
                     </xsd:appinfo>
             	</xsd:annotation>
             </xsd:element>
@@ -5221,7 +5343,7 @@
         				DEPRECATED. For compatibility only. Use objectTemplateRef in reaction instead.
         			</xsd:documentation>
         			<xsd:appinfo>
-                    	<a:objectReferenceTargetType>tns:ObjetcTemplateType</a:objectReferenceTargetType>
+                    	<a:objectReferenceTargetType>tns:ObjectTemplateType</a:objectReferenceTargetType>
                     	<a:deprecated/>
                     </xsd:appinfo>
         		</xsd:annotation>
@@ -5232,7 +5354,7 @@
         				DEPRECATED. For compatibility only. Use objectTemplateRef in reaction instead.
         			</xsd:documentation>
         			<xsd:appinfo>
-                    	<a:objectReferenceTargetType>tns:ObjetcTemplateType</a:objectReferenceTargetType>
+                    	<a:objectReferenceTargetType>tns:ObjectTemplateType</a:objectReferenceTargetType>
                     	<a:deprecated/>
                     </xsd:appinfo>
         		</xsd:annotation>
@@ -5753,11 +5875,11 @@
                 the implementation of the caching and fetching strategy, configuration of the
                 provisioning subsystem or operation that was invoked.
 
-                While this object is stored, attibutes set will contain attribute values that
+                When this object is stored, attribute set will contain attribute values that
                 are (persistently) cached from the resource.
 
-                At the normal case there should be at least attributes that identify the
-                resource object on the resouce (identifiers). This will be a single attribute
+                In the normal case, there should be at least attributes that identify the
+                resource object on the resource (identifiers). This will be a single attribute
                 in a normal case, something like uid, username, DN, etc. But if a single attribute
                 is not enough to identify the account, more than one attribute may be present.
 
@@ -5765,7 +5887,7 @@
                 user should have account on the resource, but the account is not yet created
                 and no identifier is yet assigned to it.
 
-                This schema does not distinguish which attributes are idenfiers are which are
+                This schema does not distinguish which attributes are identifiers and which are
                 ordinary attributes. That can be learned from the resource schema provided by
                 resource or resource connector.
 
@@ -5817,6 +5939,7 @@
 	    </xsd:sequence>
 	    <xsd:attribute name="id" type="xsd:long" use="optional"/>
     </xsd:complexType>
+    <xsd:element name="shadowAssociation" type="tns:ShadowAssociationType" />
 
     <xsd:complexType name="ShadowIdentifiersType">
     	<xsd:annotation>
@@ -6674,6 +6797,18 @@
                             </xsd:appinfo>
                         </xsd:annotation>
                     </xsd:element>
+                    
+                    <xsd:element name="mailDomain" type="xsd:string" minOccurs="0" maxOccurs="unbounded">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Domain part of RFC822 e-mail address that applies to this organization.
+                            </xsd:documentation>
+                            <xsd:appinfo>
+                                <a:displayName>Mail Domain</a:displayName>
+                                <a:displayOrder>220</a:displayOrder>
+                            </xsd:appinfo>
+                        </xsd:annotation>
+                    </xsd:element>
 
                     <xsd:element name="displayOrder" type="xsd:int" minOccurs="0">
                         <xsd:annotation>
@@ -7121,18 +7256,36 @@
                         </xsd:annotation>
                     </xsd:element>
                     
-                    <xsd:element name="objectTemplate" type="tns:ObjectTypeTemplateType" minOccurs="0" maxOccurs="unbounded">
-                    <xsd:annotation>
-						<xsd:documentation>
-							Definition of default object templates for a individual object type. The templates will be used
-							"universally" during all operations with specified object types - unless the templates are overriden
-							in other definitions (e.g. in resource).
-						</xsd:documentation>
-						<xsd:appinfo>
-							<a:container/>
-						</xsd:appinfo>
-					</xsd:annotation>
+                    <xsd:element name="objectTemplate" type="tns:ObjectPolicyConfigurationType" minOccurs="0" maxOccurs="unbounded">
+	                    <xsd:annotation>
+							<xsd:documentation>
+								Definition of default object templates for a individual object type. The templates will be used
+								"universally" during all operations with specified object types - unless the templates are overriden
+								in other definitions (e.g. in resource).
+								
+								DEPRECATED. Use defaultFocusPolicy instead.
+							</xsd:documentation>
+							<xsd:appinfo>
+								<a:container/>
+								<a:deprecated>true</a:deprecated>
+							</xsd:appinfo>
+						</xsd:annotation>
                     </xsd:element>
+                    
+                    <xsd:element name="defaultObjectPolicyConfiguration" type="tns:ObjectPolicyConfigurationType" minOccurs="0" maxOccurs="unbounded">
+	                    <xsd:annotation>
+							<xsd:documentation>
+								Definition of default object policy for a individual object type. The definition of this policy
+								contains object template and other similar settings. The policy will be used
+								"universally" during all operations with specified object types - unless it is overriden
+								in other definitions (e.g. in resource or org).
+							</xsd:documentation>
+							<xsd:appinfo>
+								<a:container/>
+							</xsd:appinfo>
+						</xsd:annotation>
+                    </xsd:element>
+                    
 
                     <xsd:element name="connectorFramework" minOccurs="0" maxOccurs="1" type="tns:ConnectorFrameworkType">
                         <xsd:annotation>
@@ -7175,10 +7328,12 @@
     <xsd:element name="systemConfiguration" type="tns:SystemConfigurationType"/>
    
 
-	<xsd:complexType name="ObjectTypeTemplateType">
+	<xsd:complexType name="ObjectPolicyConfigurationType">
 		<xsd:annotation>
 			<xsd:documentation>
-				Definition of default object templates for a specific object type.
+				Definition of policy for a specific object type. It defines object template
+				and similar settings that apply to the object alone. This policy settings
+				apply to the object internal structure without regard to other objects.
 			</xsd:documentation>
 			<xsd:appinfo>
 				<a:container/>
@@ -7201,6 +7356,44 @@
              			<a:objectReferenceTargetType>tns:ObjectTemplateType</a:objectReferenceTargetType>
              		</xsd:appinfo>
                  </xsd:annotation>
+             </xsd:element>
+             <xsd:element name="propertyConstraint" type="tns:PropertyConstraintType" minOccurs="0" maxOccurs="unbounded"/>
+             <xsd:element name="oidNameBoundMode" type="xsd:boolean" minOccurs="0" default="false">
+             	<xsd:annotation>
+             		<xsd:documentation>
+             			A mode in which OID and name of the speciefied object are the same.
+             		</xsd:documentation>
+             		<xsd:appinfo>
+             			<a:deprecated>true</a:deprecated>
+             		</xsd:appinfo>
+             	</xsd:annotation>
+             </xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:complexType name="PropertyConstraintType">
+		<xsd:annotation>
+			<xsd:documentation>
+				Definition of a property constraints.
+			</xsd:documentation>
+			<xsd:appinfo>
+				<a:container/>
+			</xsd:appinfo>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="path" type="t:ItemPathType" minOccurs="1" maxOccurs="1">
+			</xsd:element>
+			<!-- TODO: uniqueness constraint -->
+             <xsd:element name="oidBound" type="xsd:boolean" minOccurs="0" default="false">
+             	<xsd:annotation>
+             		<xsd:documentation>
+             			The property value will be bound to OID. This property will be set to the value
+             			of OID and it cannot be changed.
+             		</xsd:documentation>
+             		<xsd:appinfo>
+             			<a:deprecated>true</a:deprecated>
+             		</xsd:appinfo>
+             	</xsd:annotation>
              </xsd:element>
 		</xsd:sequence>
 	</xsd:complexType>

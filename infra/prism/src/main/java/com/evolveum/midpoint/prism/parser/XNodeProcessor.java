@@ -69,7 +69,9 @@ import com.evolveum.prism.xml.ns._public.types_3.SchemaDefinitionType;
 
 public class XNodeProcessor {
 
-	private PrismContext prismContext;
+    public static final String ARTIFICIAL_OBJECT_NAME = "anObject";
+
+    private PrismContext prismContext;
 	
 	public XNodeProcessor() { }
 	
@@ -135,7 +137,13 @@ public class XNodeProcessor {
 	}
 	
 	private <O extends Objectable> PrismObject<O> parseObject(MapXNode xnode, PrismObjectDefinition<O> objectDefinition) throws SchemaException {
-		return parseObject(xnode, new QName(null, "object"), objectDefinition);
+		QName elementName;
+        if (objectDefinition != null) {
+            elementName = objectDefinition.getName();
+        } else {
+            elementName = new QName(null, ARTIFICIAL_OBJECT_NAME);
+        }
+        return parseObject(xnode, elementName, objectDefinition);
 	}
 
     private <O extends Objectable> PrismObject<O> parseObject(XNode xnode, QName elementName, PrismObjectDefinition<O> objectDefinition) throws SchemaException {
@@ -275,7 +283,7 @@ public class XNodeProcessor {
 	private <C extends Containerable> PrismContainerValue<C> parsePrismContainerValueFromMap(MapXNode xmap, PrismContainerDefinition<C> containerDef,
 			Collection<QName> ignoredItems) throws SchemaException {
 		Long id = getContainerId(xmap);
-		PrismContainerValue<C> cval = new PrismContainerValue<C>(null, null, null, id, xmap.getTypeQName());
+		PrismContainerValue<C> cval = new PrismContainerValue<C>(null, null, null, id, xmap.getTypeQName(), prismContext);
 		for (Entry<QName,XNode> xentry: xmap.entrySet()) {
 			QName itemQName = xentry.getKey();
 			if (QNameUtil.match(itemQName, XNode.KEY_CONTAINER_ID)) {
@@ -564,21 +572,21 @@ public class XNodeProcessor {
 //
 //    }
 
-    public static <T> PrismProperty<T> parsePrismPropertyRaw(XNode xnode, QName itemName)
+    public static <T> PrismProperty<T> parsePrismPropertyRaw(XNode xnode, QName itemName, PrismContext prismContext)
             throws SchemaException {
         if (xnode instanceof ListXNode) {
-            return parsePrismPropertyRaw((ListXNode)xnode, itemName);
+            return parsePrismPropertyRaw((ListXNode)xnode, itemName, prismContext);
         } else {
-            PrismProperty<T> property = new PrismProperty<T>(itemName);
+            PrismProperty<T> property = new PrismProperty<T>(itemName, prismContext);
             PrismPropertyValue<T> pval = PrismPropertyValue.createRaw(xnode);
             property.add(pval);
             return property;
         }
     }
 
-    private static <T> PrismProperty<T> parsePrismPropertyRaw(ListXNode xlist, QName itemName)
+    private static <T> PrismProperty<T> parsePrismPropertyRaw(ListXNode xlist, QName itemName, PrismContext prismContext)
             throws SchemaException {
-        PrismProperty<T> property = new PrismProperty<T>(itemName);
+        PrismProperty<T> property = new PrismProperty<T>(itemName, prismContext);
         for (XNode xsubnode : xlist) {
             PrismPropertyValue<T> pval = PrismPropertyValue.createRaw(xsubnode);
             property.add(pval);
@@ -789,7 +797,7 @@ public class XNodeProcessor {
             //System.out.println("Empty filter. Skipping parsing.");
             return null;
         }
-        return SearchFilterType.createFromXNode(xnode);
+        return SearchFilterType.createFromXNode(xnode, prismContext);
     }
 
     private Class qnameToClass(QName type){
@@ -872,7 +880,7 @@ public class XNodeProcessor {
 			throws SchemaException {
 		if (itemDef == null) {
 			// Assume property in a container with runtime definition
-			return (Item<V>) parsePrismPropertyRaw(xnode, itemName);
+			return (Item<V>) parsePrismPropertyRaw(xnode, itemName, prismContext);
 		}
         if (itemDef instanceof PrismObjectDefinition) {
             return parseObject(xnode, itemName, (PrismObjectDefinition) itemDef);
@@ -978,7 +986,7 @@ public class XNodeProcessor {
         } else if (itemDefinition != null) {
             return itemDefinition.getName();
         } else {
-            return new QName(null, "object");
+            throw new IllegalStateException("Couldn't determine element name - neither from XNode nor from itemDefinition");
         }
     }
 

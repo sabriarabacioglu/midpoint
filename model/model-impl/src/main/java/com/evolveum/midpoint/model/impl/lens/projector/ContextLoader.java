@@ -318,7 +318,7 @@ public class ContextLoader {
             return;
         }
         ObjectDelta<F> objectDelta = focusContext.getDelta();
-        if (objectDelta != null && objectDelta.isAdd()) {
+        if (objectDelta != null && objectDelta.isAdd() && focusContext.getExecutedDeltas().isEmpty()) {
             //we're adding the focal object. No need to load it, it is in the delta
         	focusContext.setFresh(true);
             return;
@@ -387,14 +387,33 @@ public class ContextLoader {
 		Class<F> focusType = focusContext.getObjectTypeClass();
 
 		ObjectReferenceType templateRef = null;
-		for (ObjectTypeTemplateType objectTemplate: systemConfigurationType.getObjectTemplate()) {
-			QName typeQName = objectTemplate.getType();
+		ObjectPolicyConfigurationType policyConfigurationType = null;
+		for (ObjectPolicyConfigurationType aPolicyConfigurationType: systemConfigurationType.getDefaultObjectPolicyConfiguration()) {
+			QName typeQName = aPolicyConfigurationType.getType();
 			ObjectTypes objectType = ObjectTypes.getObjectTypeFromTypeQName(typeQName);
 			if (objectType == null) {
-				throw new ConfigurationException("Unknown type "+typeQName+" in object template definition in system configuration");
+				throw new ConfigurationException("Unknown type "+typeQName+" in default object policy definition in system configuration");
 			}
 			if (objectType.getClassDefinition() == focusType) {
-				templateRef = objectTemplate.getObjectTemplateRef();
+				templateRef = aPolicyConfigurationType.getObjectTemplateRef();
+				focusContext.setObjectPolicyConfigurationType(aPolicyConfigurationType);
+				policyConfigurationType = aPolicyConfigurationType;
+			}
+		}
+
+		if (policyConfigurationType == null) {
+			// Deprecated
+			for (ObjectPolicyConfigurationType aPolicyConfigurationType: systemConfigurationType.getObjectTemplate()) {
+				QName typeQName = aPolicyConfigurationType.getType();
+				ObjectTypes objectType = ObjectTypes.getObjectTypeFromTypeQName(typeQName);
+				if (objectType == null) {
+					throw new ConfigurationException("Unknown type "+typeQName+" in object template definition in system configuration");
+				}
+				if (objectType.getClassDefinition() == focusType) {
+					templateRef = aPolicyConfigurationType.getObjectTemplateRef();
+					focusContext.setObjectPolicyConfigurationType(aPolicyConfigurationType);
+					policyConfigurationType = aPolicyConfigurationType;
+				}
 			}
 		}
 		

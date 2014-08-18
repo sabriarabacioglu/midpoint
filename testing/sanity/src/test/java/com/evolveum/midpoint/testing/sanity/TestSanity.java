@@ -299,7 +299,7 @@ public class TestSanity extends AbstractModelIntegrationTest {
     private static final String REQUEST_ACCOUNT_MODIFY_ATTRS_FILENAME = REQUEST_DIR_NAME + "account-modify-attrs.xml";
 
     private static final String LDIF_WILL_FILENAME = REQUEST_DIR_NAME + "will.ldif";
-    private static final String LDIF_WILL_MODIFY_FILENAME = REQUEST_DIR_NAME + "will-modify.ldif";
+    private static final File LDIF_WILL_MODIFY_FILE = new File (REQUEST_DIR_NAME, "will-modify.ldif");
     private static final String LDIF_WILL_WITHOUT_LOCATION_FILENAME = REQUEST_DIR_NAME + "will-without-location.ldif";
     private static final String WILL_NAME = "wturner";
     
@@ -312,7 +312,7 @@ public class TestSanity extends AbstractModelIntegrationTest {
     private static final String LDIF_ELAINE_FILENAME = REQUEST_DIR_NAME + "elaine.ldif";
     private static final String ELAINE_NAME = "elaine";
     
-    private static final String LDIF_GIBBS_MODIFY_FILENAME = REQUEST_DIR_NAME + "gibbs-modify.ldif";
+    private static final File LDIF_GIBBS_MODIFY_FILE = new File (REQUEST_DIR_NAME, "gibbs-modify.ldif");
     
     private static final String  LDIF_HERMAN_FILENAME = REQUEST_DIR_NAME + "herman.ldif";
     
@@ -554,7 +554,7 @@ public class TestSanity extends AbstractModelIntegrationTest {
         assertFalse("Resource from " + source + " has no OID in connectorRef", StringUtils.isBlank(connectorRefType.getOid()));
         assertNotNull("Resource from " + source + " has null description in connectorRef", connectorRefType.getDescription());
         assertNotNull("Resource from " + source + " has null filter in connectorRef", connectorRefType.getFilter());
-        assertNotNull("Resource from " + source + " has null filter element in connectorRef", connectorRefType.getFilter().getFilterClause());
+        assertNotNull("Resource from " + source + " has null filter element in connectorRef", connectorRefType.getFilter().getFilterClauseXNode());
         assertNotNull("Resource from " + source + " has null configuration", resource.getConnectorConfiguration());
         assertNotNull("Resource from " + source + " has null schema", resource.getSchema());
         checkOpenDjSchema(resource, source);
@@ -581,9 +581,9 @@ public class TestSanity extends AbstractModelIntegrationTest {
         // TODO: check for naming attributes and display names, etc
 
         ActivationCapabilityType capActivation = ResourceTypeUtil.getEffectiveCapability(resource, ActivationCapabilityType.class);
-        if (capActivation != null && capActivation.getEnableDisable() != null && capActivation.getEnableDisable().getAttribute() != null) {
+        if (capActivation != null && capActivation.getStatus() != null && capActivation.getStatus().getAttribute() != null) {
             // There is simulated activation capability, check if the attribute is in schema.
-            QName enableAttrName = capActivation.getEnableDisable().getAttribute();
+            QName enableAttrName = capActivation.getStatus().getAttribute();
             ResourceAttributeDefinition enableAttrDef = accountDefinition.findAttributeDefinition(enableAttrName);
             display("Simulated activation attribute definition", enableAttrDef);
             assertNotNull("No definition for enable attribute " + enableAttrName + " in account (resource from " + source + ")", enableAttrDef);
@@ -999,7 +999,8 @@ public class TestSanity extends AbstractModelIntegrationTest {
      */
     @Test
     public void test013AddOpenDjAccountToUser() throws Exception {
-        TestUtil.displayTestTile("test013AddOpenDjAccountToUser");
+    	final String TEST_NAME = "test013AddOpenDjAccountToUser";
+        TestUtil.displayTestTile(TEST_NAME);
         try{
         // GIVEN
         checkRepoOpenDjResource();
@@ -1014,9 +1015,11 @@ public class TestSanity extends AbstractModelIntegrationTest {
                 REQUEST_USER_MODIFY_ADD_ACCOUNT_OPENDJ_FILENAME, ObjectDeltaType.class);
         
         // WHEN
+        TestUtil.displayWhen(TEST_NAME);
         OperationResultType result = modifyObjectViaModelWS(objectChange);
 
         // THEN
+        TestUtil.displayThen(TEST_NAME);
         assertNoRepoCache();
         displayJaxb("modifyObject result", result, SchemaConstants.C_RESULT);
         TestUtil.assertSuccess("modifyObject has failed", result);
@@ -2330,7 +2333,7 @@ public class TestSanity extends AbstractModelIntegrationTest {
         ItemPath employeeTypePath = new ItemPath(ShadowType.F_ATTRIBUTES, employeeTypeQName);
         PrismProperty item = shadow.findProperty(employeeTypePath);
         
-        PropertyDelta deleteDelta = new PropertyDelta(new ItemPath(ShadowType.F_ATTRIBUTES), item.getDefinition().getName(), item.getDefinition());
+        PropertyDelta deleteDelta = new PropertyDelta(new ItemPath(ShadowType.F_ATTRIBUTES), item.getDefinition().getName(), item.getDefinition(), prismContext);
 //        PropertyDelta deleteDelta = PropertyDelta.createDelta(employeeTypePath, shadow.getDefinition());
 //        PrismPropertyValue valToDelte = new PrismPropertyValue("A");
 //        valToDelte.setParent(deleteDelta);
@@ -2829,7 +2832,7 @@ public class TestSanity extends AbstractModelIntegrationTest {
 
         // WHEN
         display("Modifying LDAP entry");
-        ChangeRecordEntry entry = openDJController.executeLdifChange(LDIF_WILL_MODIFY_FILENAME);
+        ChangeRecordEntry entry = openDJController.executeLdifChange(LDIF_WILL_MODIFY_FILE);
 
         // THEN
         display("Entry from LDIF", entry);
@@ -3004,7 +3007,7 @@ public class TestSanity extends AbstractModelIntegrationTest {
                 + "." + TEST_NAME);
         
         // Make sure Mr. Gibbs has "l" attribute set to the same value as an outbound expression is setting
-        ChangeRecordEntry entry = openDJController.executeLdifChange(LDIF_GIBBS_MODIFY_FILENAME);
+        ChangeRecordEntry entry = openDJController.executeLdifChange(LDIF_GIBBS_MODIFY_FILE);
         display("Entry from LDIF", entry);
         
         // Let's add an entry with multiple uids.

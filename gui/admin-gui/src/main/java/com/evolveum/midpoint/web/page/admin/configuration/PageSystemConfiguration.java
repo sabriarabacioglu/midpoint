@@ -132,7 +132,7 @@ public class PageSystemConfiguration extends PageAdminConfiguration {
         Form mainForm = new Form(ID_MAIN_FORM);
         add(mainForm);
 
-        List<ITab> tabs = new ArrayList<ITab>();
+        List<ITab> tabs = new ArrayList<>();
         tabs.add(new AbstractTab(createStringResource("pageSystemConfiguration.system.title")) {
 
             @Override
@@ -399,9 +399,11 @@ public class PageSystemConfiguration extends PageAdminConfiguration {
             mailServerConfig.setUsername(dto.getUsername());
             mailServerConfig.setTransportSecurity(dto.getMailTransportSecurityType());
 
-            ProtectedStringType pass = new ProtectedStringType();
-            pass.setClearValue(dto.getPassword());
-            mailServerConfig.setPassword(pass);
+            if(dto.getPassword() != null && StringUtils.isNotEmpty(dto.getPassword())){
+                ProtectedStringType pass = new ProtectedStringType();
+                pass.setClearValue(dto.getPassword());
+                mailServerConfig.setPassword(pass);
+            }
 
             if(mailConfig.getServer().isEmpty()){
                 if(dto.isConfigured())

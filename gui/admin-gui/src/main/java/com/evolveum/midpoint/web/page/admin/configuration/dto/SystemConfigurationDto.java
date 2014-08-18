@@ -17,6 +17,7 @@
 package com.evolveum.midpoint.web.page.admin.configuration.dto;
 
 import com.evolveum.midpoint.prism.PrismObject;
+import com.evolveum.midpoint.prism.crypto.Protector;
 import com.evolveum.midpoint.web.page.admin.dto.ObjectViewDto;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
 
@@ -75,9 +76,9 @@ public class SystemConfigurationDto implements Serializable {
         ValuePolicyType passPolicy = config.getGlobalPasswordPolicy();
 
         if(passPolicy != null){
-            passPolicyDto = new ObjectViewDto<ValuePolicyType>(passPolicy.getOid(), passPolicy.getName().getOrig());
+            passPolicyDto = new ObjectViewDto<>(passPolicy.getOid(), passPolicy.getName().getOrig());
         }else {
-            passPolicyDto = new ObjectViewDto<ValuePolicyType>();
+            passPolicyDto = new ObjectViewDto<>();
         }
 
         passPolicyDto.setType(ValuePolicyType.class);
@@ -88,9 +89,9 @@ public class SystemConfigurationDto implements Serializable {
         ObjectTemplateType objectTemplate = config.getDefaultUserTemplate();
 
         if(objectTemplate != null){
-            objectTemplateDto = new ObjectViewDto<ObjectTemplateType>(objectTemplate.getOid(), objectTemplate.getName().getOrig());
+            objectTemplateDto = new ObjectViewDto<>(objectTemplate.getOid(), objectTemplate.getName().getOrig());
         }else {
-            objectTemplateDto = new ObjectViewDto<ObjectTemplateType>();
+            objectTemplateDto = new ObjectViewDto<>();
         }
 
         objectTemplateDto.setType(ObjectTemplateType.class);

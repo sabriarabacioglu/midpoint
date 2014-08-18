@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 Evolveum
+ * Copyright (c) 2010-2014 Evolveum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,11 +109,11 @@ import com.evolveum.midpoint.xml.ns._public.common.common_3.AuthorizationPhaseTy
 import com.evolveum.midpoint.xml.ns._public.common.common_3.AuthorizationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ConstructionType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.CredentialsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectPolicyConfigurationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.FocusType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectSynchronizationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectTypeTemplateType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.OrgType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.PasswordType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
@@ -737,7 +737,7 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 			if (targetRef != null) {
 				if (targetRef.getType().equals(RoleType.COMPLEX_TYPE)) {
 					ContainerDelta<AssignmentType> assignmentDelta = ContainerDelta.createDelta(UserType.F_ASSIGNMENT, getUserDefinition());
-					PrismContainerValue<AssignmentType> cval = new PrismContainerValue<AssignmentType>();
+					PrismContainerValue<AssignmentType> cval = new PrismContainerValue<AssignmentType>(prismContext);
 					cval.setId(assignment.getId());
 					assignmentDelta.addValueToDelete(cval);
 					modifications.add(assignmentDelta);
@@ -815,7 +815,7 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 	protected ContainerDelta<AssignmentType> createAssignmentModification(String roleOid, QName refType, QName relation, 
 			PrismContainer<?> extension, ActivationType activationType, boolean add) throws SchemaException {
 		ContainerDelta<AssignmentType> assignmentDelta = ContainerDelta.createDelta(UserType.F_ASSIGNMENT, getUserDefinition());
-		PrismContainerValue<AssignmentType> cval = new PrismContainerValue<AssignmentType>();
+		PrismContainerValue<AssignmentType> cval = new PrismContainerValue<AssignmentType>(prismContext);
 		if (add) {
 			assignmentDelta.addValueToAdd(cval);
 		} else {
@@ -894,7 +894,7 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 
     protected ObjectDelta<UserType> createReplaceAccountConstructionUserDelta(String userOid, Long id, ConstructionType newValue) throws SchemaException {
         PrismContainerDefinition pcd = getAssignmentDefinition().findContainerDefinition(AssignmentType.F_CONSTRUCTION);
-        ContainerDelta<ConstructionType> acDelta = new ContainerDelta<ConstructionType>(new ItemPath(new NameItemPathSegment(UserType.F_ASSIGNMENT), new IdItemPathSegment(id), new NameItemPathSegment(AssignmentType.F_CONSTRUCTION)), pcd);
+        ContainerDelta<ConstructionType> acDelta = new ContainerDelta<ConstructionType>(new ItemPath(new NameItemPathSegment(UserType.F_ASSIGNMENT), new IdItemPathSegment(id), new NameItemPathSegment(AssignmentType.F_CONSTRUCTION)), pcd, prismContext);
 //                ContainerDelta.createDelta(prismContext, ConstructionType.class, AssignmentType.F_CONSTRUCTION);
         acDelta.setValueToReplace(newValue.asPrismContainerValue());
 //        PropertyDelta.createModificationReplaceProperty(
@@ -1484,27 +1484,36 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 		PrismObject<SystemConfigurationType> systemConfig = repositoryService.getObject(SystemConfigurationType.class,
 				SystemObjectsType.SYSTEM_CONFIGURATION.value(), null, parentResult);
 		
-		PrismContainerValue<ObjectTypeTemplateType> deleteValue = null;
-		for (ObjectTypeTemplateType objectTemplate: systemConfig.asObjectable().getObjectTemplate()) {
-			if (objectType.equals(objectTemplate)) {
-				deleteValue = objectTemplate.asPrismContainerValue();
+		PrismContainerValue<ObjectPolicyConfigurationType> oldValue = null;
+		for (ObjectPolicyConfigurationType focusPolicyType: systemConfig.asObjectable().getDefaultObjectPolicyConfiguration()) {
+			if (objectType.equals(focusPolicyType.getType())) {
+				oldValue = focusPolicyType.asPrismContainerValue();
 			}
 		}
 		Collection<? extends ItemDelta> modifications = new ArrayList<ItemDelta>();
 		
-		if (deleteValue != null) {
-			ContainerDelta<ObjectTypeTemplateType> deleteDelta = ContainerDelta.createModificationDelete(SystemConfigurationType.F_OBJECT_TEMPLATE, 
-					SystemConfigurationType.class, prismContext, deleteValue);
+		if (oldValue != null) {
+			ContainerDelta<ObjectPolicyConfigurationType> deleteDelta = ContainerDelta.createModificationDelete(SystemConfigurationType.F_DEFAULT_OBJECT_POLICY_CONFIGURATION, 
+					SystemConfigurationType.class, prismContext, oldValue.clone());
 			((Collection)modifications).add(deleteDelta);
 		}
 		
-		ObjectTypeTemplateType newTemplateType = new ObjectTypeTemplateType();
-		newTemplateType.setType(objectType);
+		ObjectPolicyConfigurationType newFocusPolicyType;
+		ContainerDelta<ObjectPolicyConfigurationType> addDelta;
+		if (oldValue == null) {
+			newFocusPolicyType = new ObjectPolicyConfigurationType();
+			newFocusPolicyType.setType(objectType);
+			addDelta = ContainerDelta.createModificationAdd(SystemConfigurationType.F_DEFAULT_OBJECT_POLICY_CONFIGURATION, 
+					SystemConfigurationType.class, prismContext, newFocusPolicyType);
+		} else {
+			PrismContainerValue<ObjectPolicyConfigurationType> newValue = oldValue.clone();
+			addDelta = ContainerDelta.createModificationAdd(SystemConfigurationType.F_DEFAULT_OBJECT_POLICY_CONFIGURATION, 
+					SystemConfigurationType.class, prismContext, newValue);
+			newFocusPolicyType = newValue.asContainerable();
+		}
 		ObjectReferenceType templateRef = new ObjectReferenceType();
 		templateRef.setOid(userTemplateOid);
-		newTemplateType.setObjectTemplateRef(templateRef);
-		ContainerDelta<ObjectTypeTemplateType> addDelta = ContainerDelta.createModificationAdd(SystemConfigurationType.F_OBJECT_TEMPLATE, 
-				SystemConfigurationType.class, prismContext, newTemplateType);
+		newFocusPolicyType.setObjectTemplateRef(templateRef);
 		((Collection)modifications).add(addDelta);
 		
 		repositoryService.modifyObject(SystemConfigurationType.class,
@@ -1586,7 +1595,7 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
         	assignmentDeltaValue = assignmentDelta.getValuesToDelete().iterator().next();
         }
         PrismContainer<ActivationType> activationContainer = assignmentDeltaValue.findOrCreateContainer(AssignmentType.F_ACTIVATION);
-        PrismContainerValue<ActivationType> emptyValue = new PrismContainerValue<ActivationType>();
+        PrismContainerValue<ActivationType> emptyValue = new PrismContainerValue<ActivationType>(prismContext);
 		activationContainer.add(emptyValue);		
 	}
 	
@@ -2455,6 +2464,15 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 			}
 		}
 		throw new IllegalArgumentException("Synchronization setting for "+type+" and name "+name+" not found in "+resource);
+	}
+	
+	protected void assertShadowKindIntent(String shadowOid, ShadowKindType expectedKind,
+			String expectedIntent) throws ObjectNotFoundException, SchemaException {
+		OperationResult result = new OperationResult(AbstractIntegrationTest.class.getName()+".assertShadowKindIntent");
+		PrismObject<ShadowType> shadow = repositoryService.getObject(ShadowType.class, shadowOid, null, result);
+		result.computeStatus();
+		TestUtil.assertSuccess(result);
+		assertShadowKindIntent(shadow, expectedKind, expectedIntent);
 	}
 	
 	protected void assertShadowKindIntent(PrismObject<ShadowType> shadow, ShadowKindType expectedKind,

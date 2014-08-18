@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 Evolveum
+ * Copyright (c) 2010-2014 Evolveum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
 
 import com.evolveum.midpoint.common.ActivationComputer;
@@ -86,10 +87,12 @@ import com.evolveum.midpoint.xml.ns._public.common.common_3.IterationSpecificati
 import com.evolveum.midpoint.xml.ns._public.common.common_3.LayerType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.MappingStrengthType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.MappingType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectPolicyConfigurationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectTemplateType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.PasswordType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.PropertyConstraintType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceObjectTypeDefinitionType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ScriptExpressionReturnTypeType;
@@ -100,6 +103,7 @@ import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemConfigurationT
 import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemObjectsType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.TimeIntervalStatusType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ValuePolicyType;
+import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
 
 /**
  * @author semancik
@@ -544,7 +548,7 @@ public class LensUtil {
 		while (iterator.hasNext()) {
 			ItemDelta projModification = iterator.next();
 			LOGGER.trace("MOD: {}\n{}", projModification.getPath(), projModification.debugDump());
-			if (projModification.getPath().equals(SchemaConstants.PATH_TRIGGER)) {
+			if (projModification.getPath().equivalent(SchemaConstants.PATH_TRIGGER)) {
 				focusCtx.swallowToProjectionWaveSecondaryDelta(projModification);
 				iterator.remove();
 			}
@@ -689,6 +693,26 @@ public class LensUtil {
 					} else {
 						aPrioriDelta.merge(aPropProjDelta);
 					}
+				}
+			}
+		}
+		return aPrioriDelta;
+	}
+	
+	/**
+	 * Extracts the delta from this projection context and also from all other projection contexts that have 
+	 * equivalent discriminator.
+	 */
+	public static <F extends ObjectType, T> ObjectDelta<ShadowType> findAPrioriDelta(LensContext<F> context,
+			LensProjectionContext projCtx) throws SchemaException {
+		ObjectDelta<ShadowType> aPrioriDelta = null;
+		for (LensProjectionContext aProjCtx: findRelatedContexts(context, projCtx)) {
+			ObjectDelta<ShadowType> aProjDelta = aProjCtx.getDelta();
+			if (aProjDelta != null) {
+				if (aPrioriDelta == null) {
+					aPrioriDelta = aProjDelta.clone();
+				} else {
+					aPrioriDelta.merge(aProjDelta);
 				}
 			}
 		}
@@ -1086,13 +1110,80 @@ public class LensUtil {
     }
     
     public static <F extends ObjectType> void checkContextSanity(LensContext<F> context, String activityDescription, 
-			OperationResult result) throws SchemaException {
+			OperationResult result) throws SchemaException, PolicyViolationException {
 		LensFocusContext<F> focusContext = context.getFocusContext();
 		if (focusContext != null) {
 			PrismObject<F> focusObjectNew = focusContext.getObjectNew();
 			if (focusObjectNew != null) {
-				if (focusObjectNew.asObjectable().getName() == null) {
+				PolyStringType namePolyType = focusObjectNew.asObjectable().getName();
+				if (namePolyType == null) {
 					throw new SchemaException("Focus "+focusObjectNew+" does not have a name after "+activityDescription);
+				}
+				ObjectPolicyConfigurationType objectPolicyConfigurationType = focusContext.getObjectPolicyConfigurationType();
+				checkObjectPolicy(focusContext, objectPolicyConfigurationType);
+			}
+		}
+	}
+
+	private static <F extends ObjectType> void checkObjectPolicy(LensFocusContext<F> focusContext, ObjectPolicyConfigurationType objectPolicyConfigurationType) throws SchemaException, PolicyViolationException {
+		if (objectPolicyConfigurationType == null) {
+			return;
+		}
+		PrismObject<F> focusObjectNew = focusContext.getObjectNew();
+		ObjectDelta<F> focusDelta = focusContext.getDelta();
+		
+		for (PropertyConstraintType propertyConstraintType: objectPolicyConfigurationType.getPropertyConstraint()) {
+			ItemPath itemPath = propertyConstraintType.getPath().getItemPath();
+			if (BooleanUtils.isTrue(propertyConstraintType.isOidBound())) {
+				if (focusDelta != null) {
+					if (focusDelta.isAdd()) {
+						PrismProperty<Object> propNew = focusObjectNew.findProperty(itemPath);
+						if (propNew != null) {
+							// prop delta is OK, but it has to match
+							if (focusObjectNew.getOid() != null) {
+								if (!focusObjectNew.getOid().equals(propNew.getRealValue().toString())) {
+									throw new PolicyViolationException("Cannot set "+itemPath+" to a value different than OID in oid bound mode");
+								}
+							}
+						}
+					} else {
+						PropertyDelta<Object> nameDelta = focusDelta.findPropertyDelta(itemPath);
+						if (nameDelta != null) {
+							if (nameDelta.isReplace()) {
+								Collection<PrismPropertyValue<Object>> valuesToReplace = nameDelta.getValuesToReplace();
+								if (valuesToReplace.size() == 1) {
+									String stringValue = valuesToReplace.iterator().next().getValue().toString();
+									if (focusContext.getOid().equals(stringValue)) {
+										// This is OK. It is most likely a correction made by a recompute.
+										continue;
+									}
+								}
+							}
+							throw new PolicyViolationException("Cannot change "+itemPath+" in oid bound mode");
+						}
+					}
+				}
+			}
+		}
+		
+		// Deprecated
+		if (BooleanUtils.isTrue(objectPolicyConfigurationType.isOidNameBoundMode())) {
+			if (focusDelta != null) {
+				if (focusDelta.isAdd()) {
+					PolyStringType namePolyType = focusObjectNew.asObjectable().getName();
+					if (namePolyType != null) {
+						// name delta is OK, but it has to match
+						if (focusObjectNew.getOid() != null) {
+							if (!focusObjectNew.getOid().equals(namePolyType.getOrig())) {
+								throw new PolicyViolationException("Cannot set name to a value different than OID in name-oid bound mode");
+							}
+						}
+					}
+				} else {
+					PropertyDelta<Object> nameDelta = focusDelta.findPropertyDelta(FocusType.F_NAME);
+					if (nameDelta != null) {
+						throw new PolicyViolationException("Cannot change name in name-oid bound mode");
+					}
 				}
 			}
 		}

@@ -16,6 +16,7 @@
 
 package com.evolveum.midpoint.model.impl.scripting.actions;
 
+import com.evolveum.midpoint.model.api.ModelExecuteOptions;
 import com.evolveum.midpoint.model.impl.scripting.Data;
 import com.evolveum.midpoint.model.impl.scripting.ExecutionContext;
 import com.evolveum.midpoint.model.impl.scripting.ScriptExecutionException;
@@ -30,6 +31,7 @@ import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.model.scripting_3.ActionExpressionType;
+import com.evolveum.midpoint.xml.ns._public.model.scripting_3.ActionParameterValueType;
 import com.evolveum.prism.xml.ns._public.types_3.ChangeTypeType;
 import com.evolveum.prism.xml.ns._public.types_3.ObjectDeltaType;
 
@@ -57,15 +59,17 @@ public class ModifyExecutor extends BaseActionExecutor {
     @Override
     public Data execute(ActionExpressionType expression, Data input, ExecutionContext context, OperationResult result) throws ScriptExecutionException {
 
-        JAXBElement<?> deltaExpression = expressionHelper.getArgument(expression.getParameter(), PARAM_DELTA, true, true, NAME);
-        Data deltaData = scriptingExpressionEvaluator.evaluateExpression(deltaExpression, input, context, result);
+        boolean raw = getParamRaw(expression, input, context, result);
+
+        ActionParameterValueType deltaParameterValue = expressionHelper.getArgument(expression.getParameter(), PARAM_DELTA, true, true, NAME);
+        Data deltaData = expressionHelper.evaluateParameter(deltaParameterValue, input, context, result);
 
         for (Item item : input.getData()) {
             if (item instanceof PrismObject) {
                 PrismObject<? extends ObjectType> prismObject = (PrismObject) item;
                 ObjectType objectType = prismObject.asObjectable();
-                operationsHelper.applyDelta(createDelta(objectType, deltaData), context, result);
-                context.println("Modified " + item.toString());
+                operationsHelper.applyDelta(createDelta(objectType, deltaData), operationsHelper.createExecutionOptions(raw), context, result);
+                context.println("Modified " + item.toString() + rawSuffix(raw));
             } else {
                 throw new ScriptExecutionException("Item could not be modified, because it is not a PrismObject: " + item.toString());
             }

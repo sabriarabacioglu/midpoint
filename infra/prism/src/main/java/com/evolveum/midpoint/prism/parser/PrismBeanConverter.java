@@ -257,7 +257,13 @@ public class PrismBeanConverter {
 							// This is the case of Collection<JAXBElement<?>>
 							// we need to exctract the specific type from the factory method
 							if (elementMethod == null){
-								throw new IllegalArgumentException("Wildcard type in JAXBElement field specification and no facotry method found for field "+fieldName+" in "+beanClass+", cannot determine collection type (inner type argument)");
+                                // TODO: TEMPORARY CODE!!!!!!!!!! fix in 3.1 [med]
+                                Class objectFactoryClass = inspector.getObjectFactoryClass(beanClass.getPackage());
+                                objectFactory = instantiateObjectFactory(objectFactoryClass);
+                                elementMethod = inspector.findElementMethodInObjectFactory(objectFactoryClass, propName);
+                                if (elementMethod == null) {
+                                    throw new IllegalArgumentException("Wildcard type in JAXBElement field specification and no factory method found for field "+fieldName+" in "+beanClass+", cannot determine collection type (inner type argument)");
+                                }
 							}
 							Type factoryMethodGenericReturnType = elementMethod.getGenericReturnType();
 							Type factoryMethodTypeArgument = getTypeArgument(factoryMethodGenericReturnType, "in factory method "+elementMethod+" return type for field "+fieldName+" in "+beanClass+", cannot determine collection type");
@@ -424,15 +430,15 @@ public class PrismBeanConverter {
         } catch (InstantiationException|IllegalAccessException e) {
             throw new SystemException("Cannot instantiate " + beanClass + ": " + e.getMessage(), e);
         }
-        filterType.parseFromXNode(xmap);
+        filterType.parseFromXNode(xmap, prismContext);
 		return filterType;
 	}
 	
-	private XNode marshalSearchFilterType(SearchFilterType value) throws SchemaException {
+	private MapXNode marshalSearchFilterType(SearchFilterType value) throws SchemaException {
 		if (value == null) {
 			return null;
 		}
-		return value.serializeToXNode(prismContext);
+		return value.serializeToXNode();
 	}
 
 	private Type getTypeArgument(Type origType, String desc) {
@@ -624,32 +630,39 @@ public class PrismBeanConverter {
             return xProtected;
         } else if (bean instanceof ItemPathType){
             return marshalItemPathType((ItemPathType) bean);
-        } else if (bean instanceof SearchFilterType) {
-            return marshalSearchFilterType((SearchFilterType) bean);
         } else if (bean instanceof RawType) {
             return marshalRawValue((RawType) bean);
         } else if (bean instanceof XmlAsStringType) {
             return marshalXmlAsStringType((XmlAsStringType) bean);
-        }
-        else if (prismContext != null && prismContext.getSchemaRegistry().determineDefinitionFromClass(bean.getClass()) != null){
+        } else if (prismContext != null && prismContext.getSchemaRegistry().determineDefinitionFromClass(bean.getClass()) != null){
         	return prismContext.getXnodeProcessor().serializeObject(((Objectable)bean).asPrismObject()).getSubnode();
         }
-       
-		MapXNode xmap = new MapXNode();
-				
-		Class<? extends Object> beanClass = bean.getClass();
-		
-		//check for enums
-		if (beanClass.isEnum()){
-			String enumValue = XNodeProcessorUtil.findEnumFieldValue(beanClass, bean);
-			if (StringUtils.isEmpty(enumValue)){
-				enumValue = bean.toString();
-			}
-			QName fieldTypeName = inspector.findFieldTypeName(null, beanClass, DEFAULT_PLACEHOLDER);
-			return createPrimitiveXNode(enumValue, fieldTypeName, false);
-//			return marshallValue(bean, fieldTypeName, false);
-		}
-		
+
+        // Note: SearchFilterType is treated below
+
+        Class<? extends Object> beanClass = bean.getClass();
+
+        //check for enums
+        if (beanClass.isEnum()){
+            String enumValue = XNodeProcessorUtil.findEnumFieldValue(beanClass, bean);
+            if (StringUtils.isEmpty(enumValue)){
+                enumValue = bean.toString();
+            }
+            QName fieldTypeName = inspector.findFieldTypeName(null, beanClass, DEFAULT_PLACEHOLDER);
+            return createPrimitiveXNode(enumValue, fieldTypeName, false);
+        }
+
+        MapXNode xmap;
+        if (bean instanceof SearchFilterType) {
+            // this hack is here because of c:ConditionalSearchFilterType - it is analogous to situation when unmarshalling this type (TODO: rework this in a nicer way)
+            xmap = marshalSearchFilterType((SearchFilterType) bean);
+            if (SearchFilterType.class.equals(bean.getClass())) {
+                return xmap;        // nothing more to serialize; otherwise we continue, because in that case we deal with a subclass of SearchFilterType
+            }
+        } else {
+            xmap = new MapXNode();
+        }
+
 		XmlType xmlType = beanClass.getAnnotation(XmlType.class);
 		if (xmlType == null) {
 			throw new IllegalArgumentException("Cannot marshall "+beanClass+" it does not have @XmlType annotation");
@@ -696,19 +709,36 @@ public class PrismBeanConverter {
 					continue;
 				}
 				
-				QName fieldTypeName = inspector.findFieldTypeName(field, getterResultValue.getClass(), namespace);
-								
 				ListXNode xlist = new ListXNode();
-				for (Object element: col) {
+
+                // elementName will be determined from the first item on the list
+                // TODO make sure it will be correct with respect to other items as well!
+                if (getterResultValue instanceof JAXBElement && ((JAXBElement) getterResultValue).getName() != null) {
+                    elementName = ((JAXBElement) getterResultValue).getName();
+                }
+
+                for (Object element: col) {
+                    QName fieldTypeName = inspector.findFieldTypeName(field, element.getClass(), namespace);
 					Object elementToMarshall = element;
 					if (element instanceof JAXBElement){
-						if (((JAXBElement) element).getName() != null){
-							elementName = ((JAXBElement) element).getName(); 
-						}
 						elementToMarshall = ((JAXBElement) element).getValue();
 					} 
 					XNode marshalled = marshallValue(elementToMarshall, fieldTypeName, isAttribute);
-					setExplicitTypeDeclarationIfNeeded(getter, getterResultValue, marshalled, fieldTypeName);
+
+                    // Brutal hack - made here just to make scripts (bulk actions) functional while not breaking anything else
+                    // Fix it in 3.1. [med]
+                    if (fieldTypeName == null && element instanceof JAXBElement && marshalled != null) {
+                        QName typeName = inspector.determineTypeForClass(elementToMarshall.getClass());
+                        if (typeName != null && !getSchemaRegistry().hasImplicitTypeDefinition(elementName, typeName)) {
+                            marshalled.setExplicitTypeDeclaration(true);
+                            marshalled.setTypeQName(typeName);
+                        }
+                    }
+                    else {
+                    // end of hack
+
+                        setExplicitTypeDeclarationIfNeeded(getter, getterResultValue, marshalled, fieldTypeName);
+                    }
 					xlist.add(marshalled);
 				}
                 xmap.put(elementName, xlist);
@@ -840,12 +870,12 @@ public class PrismBeanConverter {
 			Type genericReturnType = getter.getGenericReturnType();
 			if (genericReturnType instanceof ParameterizedType){
 				Type actualType = getTypeArgument(genericReturnType, "explicit type declaration");
-				 
+
 				if (actualType instanceof Class){
 					getterType = (Class) actualType;
 				}
 			}
-		} 
+		}
 		if (getterType == null){
 			getterType = getterReturnType;
 		}

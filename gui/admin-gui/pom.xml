@@ -114,7 +114,16 @@
                     <artifactId>slf4j-api</artifactId>
                     <groupId>org.slf4j</groupId>
                 </exclusion>
+                <exclusion>
+				    <groupId>org.webjars</groupId>
+    				<artifactId>webjars-locator</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+        	<groupId>org.webjars</groupId>
+    		<artifactId>webjars-locator</artifactId>
+    		<version>0.15</version>
         </dependency>
         <dependency>
             <groupId>ro.isdc.wro4j</groupId>
@@ -132,7 +141,7 @@
                 <exclusion>
                     <!-- unused library (13mb) -->
                     <groupId>org.jruby</groupId>
-                    <artifactId>jruby-complete</artifactId>
+                    <artifactId>jruby-core</artifactId>
                 </exclusion>
                 <exclusion>
                     <!-- unused library (500kb) -->
@@ -149,12 +158,42 @@
                     <groupId>com.google.javascript</groupId>
                     <artifactId>closure-compiler</artifactId>
                 </exclusion>
+                <exclusion>
+                    <!-- unused library -->
+                    <groupId>org.webjars</groupId>
+                    <artifactId>coffee-script</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- unused library -->
+                    <groupId>org.codehaus.gmaven.runtime</groupId>
+                    <artifactId>gmaven-runtime-1.7</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- unused library -->
+                    <groupId>com.github.lltyk</groupId>
+                    <artifactId>dojo-shrinksafe</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- unused library -->
+                    <groupId>org.webjars</groupId>
+                    <artifactId>emberjs</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- unused library -->
+                    <groupId>org.webjars</groupId>
+                    <artifactId>handlebars</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- unused library -->
+                    <groupId>org.webjars</groupId>
+                    <artifactId>json2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- unused library -->
+                    <groupId>com.google.code.gson</groupId>
+                    <artifactId>gson</artifactId>
+                </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.mozilla</groupId>
-            <artifactId>rhino</artifactId>
-            <version>1.7R4</version>
         </dependency>
 
         <!-- MIDPOINT LOCALIZATION -->
@@ -186,6 +225,16 @@
             <groupId>com.evolveum.midpoint.repo</groupId>
             <artifactId>repo-api</artifactId>
             <version>3.1-SNAPSHOT</version>
+            <exclusions>
+            	<exclusion>
+            		<artifactId>jaxb-impl</artifactId>
+            		<groupId>com.sun.xml.bind</groupId>
+            	</exclusion>
+            	<exclusion>
+            		<artifactId>jaxb-core</artifactId>
+            		<groupId>com.sun.xml.bind</groupId>
+            	</exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.evolveum.midpoint.model</groupId>
@@ -224,6 +273,20 @@
             <artifactId>repo-cache</artifactId>
             <version>3.1-SNAPSHOT</version>
             <scope>runtime</scope>
+            <exclusions>
+            	<exclusion>
+            		<artifactId>jaxb-impl</artifactId>
+            		<groupId>com.sun.xml.bind</groupId>
+            	</exclusion>
+            	<exclusion>
+            		<artifactId>jaxb-api</artifactId>
+            		<groupId>javax.xml.bind</groupId>
+            	</exclusion>
+            	<exclusion>
+            		<artifactId>jaxb-core</artifactId>
+            		<groupId>com.sun.xml.bind</groupId>
+            	</exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.evolveum.midpoint.repo</groupId>
@@ -248,6 +311,12 @@
             <artifactId>model-impl</artifactId>
             <version>3.1-SNAPSHOT</version>
             <scope>runtime</scope>
+            <exclusions>
+            	<exclusion>
+            		<artifactId>jaxb-impl</artifactId>
+            		<groupId>com.sun.xml.bind</groupId>
+            	</exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.evolveum.midpoint.model</groupId>
@@ -273,12 +342,24 @@
             <version>3.1-SNAPSHOT</version>
             <scope>runtime</scope>
         </dependency>
-		<dependency>
+	<dependency>
             <groupId>com.evolveum.midpoint.model</groupId>
             <artifactId>report-impl</artifactId>
             <version>3.1-SNAPSHOT</version>
             <scope>runtime</scope>
         </dependency>
+	<dependency>
+            <groupId>com.evolveum.midpoint.infra</groupId>
+            <artifactId>common</artifactId>
+            <version>3.1-SNAPSHOT</version>
+            <exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+  					<artifactId>xml-apis</artifactId>
+				</exclusion>
+            </exclusions>
+        </dependency>
+ 
         <!-- SPRING -->
         <dependency>
             <groupId>org.springframework</groupId>
@@ -303,10 +384,6 @@
         <dependency>
             <groupId>org.apache.wicket</groupId>
             <artifactId>wicket-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.wicket</groupId>
-            <artifactId>wicket-atmosphere</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.wicket</groupId>
@@ -367,6 +444,12 @@
             <scope>runtime</scope>
         </dependency>
         -->
+
+		<dependency>
+			<groupId>javax.jws</groupId>
+			<artifactId>jsr181-api</artifactId>
+			<version>1.0-MR1</version>
+		</dependency>
 
         <!-- TEST -->
         <dependency>
@@ -452,6 +535,12 @@
 			<groupId>net.sf.jasperreports</groupId>
 			<artifactId>jasperreports</artifactId>
 			<version>4.7.0-e1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+  					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate</groupId>
@@ -496,5 +585,29 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>tomcat</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+	    <dependencies>
+		<dependency>
+                        <artifactId>jaxb-impl</artifactId>
+                        <groupId>com.sun.xml.bind</groupId>
+                </dependency>
+                <dependency>
+                        <artifactId>jaxb-api</artifactId>
+                        <groupId>javax.xml.bind</groupId>
+                </dependency>
+                <dependency>
+                        <artifactId>jaxb-core</artifactId>
+                        <groupId>com.sun.xml.bind</groupId>
+		</dependency>
+	    </dependencies>
+
+        </profile>
+
     </profiles>
 </project>

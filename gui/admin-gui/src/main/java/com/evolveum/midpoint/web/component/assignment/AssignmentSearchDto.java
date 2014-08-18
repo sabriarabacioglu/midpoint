@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package com.evolveum.midpoint.web.component.atmosphere;
+package com.evolveum.midpoint.web.component.assignment;
 
-import com.google.common.base.Predicate;
-import org.apache.wicket.atmosphere.AtmosphereEvent;
-
-import javax.annotation.Nullable;
+import java.io.Serializable;
 
 /**
- * @author lazyman
- */
-public class NotifyMessageFilter implements Predicate<AtmosphereEvent> {
+ *  @author shood
+ * */
+public class AssignmentSearchDto implements Serializable {
 
-    @Override
-    public boolean apply(@Nullable AtmosphereEvent input) {
-        if (!(input.getPayload() instanceof NotifyMessage)) {
-            return false;
-        }
+    public static final String F_SEARCH_TEXT = "text";
 
-        //here can be other checks...
+    private String text;
 
-        return true;
+    public String getText() {
+        return text;
     }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
 }

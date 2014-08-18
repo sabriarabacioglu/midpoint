@@ -479,6 +479,9 @@ public class XmlTypeConverter {
     }
 
     public static long toMillis(XMLGregorianCalendar xmlCal) {
+    	if (xmlCal == null){
+    		return 0;
+    	}
         return xmlCal.toGregorianCalendar().getTimeInMillis();
     }
     
@@ -582,6 +585,10 @@ public class XmlTypeConverter {
 
 	public static XMLGregorianCalendar addMillis(XMLGregorianCalendar now, long duration) {
 		return createXMLGregorianCalendar(toMillis(now) + duration);
+	}
+
+	public static String formatDateXml(Date date) {
+		return createXMLGregorianCalendar(date).toXMLFormat();
 	}
 
 }
