@@ -169,12 +169,18 @@ public class TestSecurity extends AbstractInitializedModelIntegrationTest {
 
 	protected static final File ROLE_ASSIGN_APPLICATION_ROLES_FILE = new File(TEST_DIR, "role-assign-application-roles.xml");
 	protected static final String ROLE_ASSIGN_APPLICATION_ROLES_OID = "00000000-0000-0000-0000-00000000aa0c";
-
+	
 	protected static final File ROLE_ORG_READ_ORGS_MINISTRY_OF_RUM_FILE = new File(TEST_DIR, "role-org-read-orgs-ministry-of-rum.xml");
 	protected static final String ROLE_ORG_READ_ORGS_MINISTRY_OF_RUM_OID = "00000000-0000-0000-0000-00000000aa0d";
 
 	protected static final File ROLE_FILTER_OBJECT_USER_LOCATION_SHADOWS_FILE = new File(TEST_DIR, "role-filter-object-user-location-shadows.xml");
 	protected static final String ROLE_FILTER_OBJECT_USER_LOCATION_SHADOWS_OID = "00000000-0000-0000-0000-00000000aa0e";
+	
+	protected static final File ROLE_END_USER_FILE = new File(TEST_DIR, "role-end-user.xml");
+	protected static final String ROLE_END_USER_OID = "00000000-0000-0000-0000-00000000aa0f";
+	
+	protected static final File ROLE_MODIFY_USER_FILE = new File(TEST_DIR, "role-modify-user.xml");
+	protected static final String ROLE_MODIFY_USER_OID = "00000000-0000-0000-0000-00000000aa0g";
 
 	protected static final File ROLE_APPLICATION_1_FILE = new File(TEST_DIR, "role-application-1.xml");
 	protected static final String ROLE_APPLICATION_1_OID = "00000000-0000-0000-0000-00000000aaa1";
@@ -184,6 +190,9 @@ public class TestSecurity extends AbstractInitializedModelIntegrationTest {
 
 	protected static final File ROLE_BUSINESS_1_FILE = new File(TEST_DIR, "role-business-1.xml");
 	protected static final String ROLE_BUSINESS_1_OID = "00000000-0000-0000-0000-00000000aab1";
+	
+	protected static final File ROLE_CONDITIONAL_FILE = new File(TEST_DIR, "role-conditional.xml");
+	protected static final String ROLE_CONDITIONAL_OID = "00000000-0000-0000-0000-00000000aac1";
 
 	private static final String LOG_PREFIX_FAIL = "SSSSS=X ";
 	private static final String LOG_PREFIX_ATTEMPT = "SSSSS=> ";
@@ -219,6 +228,11 @@ public class TestSecurity extends AbstractInitializedModelIntegrationTest {
 		repoAddObjectFromFile(ROLE_APPLICATION_1_FILE, RoleType.class, initResult);
 		repoAddObjectFromFile(ROLE_APPLICATION_2_FILE, RoleType.class, initResult);
 		repoAddObjectFromFile(ROLE_BUSINESS_1_FILE, RoleType.class, initResult);
+		
+		repoAddObjectFromFile(ROLE_CONDITIONAL_FILE, RoleType.class, initResult);
+		
+		repoAddObjectFromFile(ROLE_END_USER_FILE, RoleType.class, initResult);
+		repoAddObjectFromFile(ROLE_MODIFY_USER_FILE, RoleType.class, initResult);
 		
 		assignOrg(USER_GUYBRUSH_OID, ORG_SWASHBUCKLER_SECTION_OID, initTask, initResult);
 		
@@ -344,6 +358,80 @@ public class TestSecurity extends AbstractInitializedModelIntegrationTest {
         assertNotAuthorized(principal, AUTZ_COMMAND_URL);
 	}
 	
+	@Test
+    public void test060GuybrushConditionalRoleFalse() throws Exception {
+		final String TEST_NAME = "test060GuybrushConditionalRoleFalse";
+        TestUtil.displayTestTile(this, TEST_NAME);
+        assertLoggedInUser(USER_ADMINISTRATOR_USERNAME);
+        
+        assignRole(USER_GUYBRUSH_OID, ROLE_CONDITIONAL_OID);
+
+        // WHEN
+        MidPointPrincipal principal = userProfileService.getPrincipal(USER_GUYBRUSH_USERNAME);
+        
+        // THEN
+        display("Principal guybrush", principal);
+        assertEquals("wrong username", USER_GUYBRUSH_USERNAME, principal.getUsername());
+        assertEquals("wrong oid", USER_GUYBRUSH_OID, principal.getOid());
+        assertTrue("Unexpected authorizations", principal.getAuthorities().isEmpty());
+        display("User in principal guybrush", principal.getUser().asPrismObject());
+        
+        principal.getUser().asPrismObject().checkConsistence(true, true);
+        
+        assertNotAuthorized(principal, AUTZ_LOOT_URL);
+        assertNotAuthorized(principal, AUTZ_COMMAND_URL);
+	}
+	
+	@Test
+    public void test061GuybrushConditionalRoleTrue() throws Exception {
+		final String TEST_NAME = "test061GuybrushConditionalRoleTrue";
+        TestUtil.displayTestTile(this, TEST_NAME);
+        assertLoggedInUser(USER_ADMINISTRATOR_USERNAME);
+        
+        Task task = taskManager.createTaskInstance(TestRbac.class.getName() + "." + TEST_NAME);
+        OperationResult result = task.getResult();
+        modifyUserReplace(USER_GUYBRUSH_OID, UserType.F_EMPLOYEE_TYPE, task, result, "looser");
+
+        // WHEN
+        MidPointPrincipal principal = userProfileService.getPrincipal(USER_GUYBRUSH_USERNAME);
+        
+        // THEN
+        display("Principal guybrush", principal);
+        assertEquals("wrong username", USER_GUYBRUSH_USERNAME, principal.getUsername());
+        assertEquals("wrong oid", USER_GUYBRUSH_OID, principal.getOid());
+        assertTrue("Unexpected authorizations", principal.getAuthorities().isEmpty());
+        display("User in principal guybrush", principal.getUser().asPrismObject());
+        
+        principal.getUser().asPrismObject().checkConsistence(true, true);
+        
+        assertNotAuthorized(principal, AUTZ_LOOT_URL);
+        assertNotAuthorized(principal, AUTZ_COMMAND_URL);
+        assertNotAuthorized(principal, AUTZ_CAPSIZE_URL);
+	}
+	
+	@Test
+    public void test062GuybrushConditionalRoleUnassign() throws Exception {
+		final String TEST_NAME = "test062GuybrushConditionalRoleUnassign";
+        TestUtil.displayTestTile(this, TEST_NAME);
+        assertLoggedInUser(USER_ADMINISTRATOR_USERNAME);
+        
+        unassignRole(USER_GUYBRUSH_OID, ROLE_CONDITIONAL_OID);
+
+        // WHEN
+        MidPointPrincipal principal = userProfileService.getPrincipal(USER_GUYBRUSH_USERNAME);
+        
+        // THEN
+        display("Principal guybrush", principal);
+        assertEquals("wrong username", USER_GUYBRUSH_USERNAME, principal.getUsername());
+        assertEquals("wrong oid", USER_GUYBRUSH_OID, principal.getOid());
+        assertTrue("Unexpected authorizations", principal.getAuthorities().isEmpty());
+        display("User in principal guybrush", principal.getUser().asPrismObject());
+        
+        principal.getUser().asPrismObject().checkConsistence(true, true);
+        
+        assertNotAuthorized(principal, AUTZ_LOOT_URL);
+        assertNotAuthorized(principal, AUTZ_COMMAND_URL);
+	}
 	
 	@Test
     public void test100JackRolePirate() throws Exception {
@@ -1131,6 +1219,86 @@ public class TestSecurity extends AbstractInitializedModelIntegrationTest {
         assertAssignments(user, 2);
 	}
 
+	
+	@Test
+    public void test280AutzJackEndUserAndModify() throws Exception {
+		final String TEST_NAME = "test270AutzJackAssignApplicationRoles";
+        TestUtil.displayTestTile(this, TEST_NAME);
+        // GIVEN
+        cleanupAutzTest(USER_JACK_OID);        
+        
+        assignRole(USER_JACK_OID, ROLE_END_USER_OID);
+        assignRole(USER_JACK_OID, ROLE_MODIFY_USER_OID);
+        
+        assumeAssignmentPolicy(AssignmentPolicyEnforcementType.RELATIVE);
+        
+        login(USER_JACK_USERNAME);
+        
+        // WHEN
+        TestUtil.displayWhen(TEST_NAME);
+
+        assertReadAllow();
+        assertAddDeny();
+        assertModifyAllow();
+        assertDeleteDeny();
+
+        PrismObject<UserType> user = getUser(USER_JACK_OID);
+        assertAssignments(user, 3);
+        
+        assertAllow("modify jack's familyName", new Attempt() {
+			@Override
+			public void run(Task task, OperationResult result) throws Exception {
+				modifyObjectReplaceProperty(UserType.class, USER_JACK_OID, new ItemPath(UserType.F_FAMILY_NAME), task, result, PrismTestUtil.createPolyString("changed"));
+			}
+		});
+        
+        user = getUser(USER_JACK_OID);
+        assertUser(user, USER_JACK_OID, USER_JACK_USERNAME, USER_JACK_FULL_NAME, "Jack", "changed");
+
+       
+	}
+
+
+	@Test
+    public void test281AutzJackModifyAndEndUser() throws Exception {
+		final String TEST_NAME = "test270AutzJackAssignApplicationRoles";
+        TestUtil.displayTestTile(this, TEST_NAME);
+        // GIVEN
+        cleanupAutzTest(USER_JACK_OID);        
+        
+        assignRole(USER_JACK_OID, ROLE_MODIFY_USER_OID);
+        assignRole(USER_JACK_OID, ROLE_END_USER_OID);
+        
+        
+        assumeAssignmentPolicy(AssignmentPolicyEnforcementType.RELATIVE);
+        
+        login(USER_JACK_USERNAME);
+        
+        // WHEN
+        TestUtil.displayWhen(TEST_NAME);
+
+        assertReadAllow();
+        assertAddDeny();
+        assertModifyAllow();
+        assertDeleteDeny();
+
+        PrismObject<UserType> user = getUser(USER_JACK_OID);
+        assertAssignments(user, 3);
+        
+        assertAllow("modify jack's familyName", new Attempt() {
+			@Override
+			public void run(Task task, OperationResult result) throws Exception {
+				modifyObjectReplaceProperty(UserType.class, USER_JACK_OID, new ItemPath(UserType.F_FAMILY_NAME), task, result, PrismTestUtil.createPolyString("changed"));
+			}
+		});
+        
+        user = getUser(USER_JACK_OID);
+        assertUser(user, USER_JACK_OID, USER_JACK_USERNAME, USER_JACK_FULL_NAME, "Jack", "changed");
+
+	}
+
+
+	
 	private void assertItemFlags(PrismObjectDefinition<UserType> editSchema, QName itemName, boolean expectedRead, boolean expectedAdd, boolean expectedModify) {
 		assertItemFlags(editSchema, new ItemPath(itemName), expectedRead, expectedAdd, expectedModify);
 	}

@@ -67,6 +67,18 @@ public class ShadowUtil {
 		return attributesContainer.getSecondaryIdentifiers();	
 	}
 	
+	public static ResourceAttribute<String> getNamingAttribute(ShadowType shadow){
+		return getNamingAttribute(shadow.asPrismObject());
+	}
+	
+	public static ResourceAttribute<String> getNamingAttribute(PrismObject<? extends ShadowType> shadow) {
+		ResourceAttributeContainer attributesContainer = getAttributesContainer(shadow);
+		if (attributesContainer == null) {
+			return null;
+		}
+		return attributesContainer.getNamingAttribute();	
+	}
+	
 	public static Collection<ResourceAttribute<?>> getAttributes(ShadowType shadowType) {
 		return getAttributes(shadowType.asPrismObject());
 	}
@@ -148,7 +160,7 @@ public class ShadowUtil {
 	}
 	
 
-	private static String getSingleStringAttributeValue(PrismObject<ShadowType> shadow, QName attrName) {
+	public static String getSingleStringAttributeValue(PrismObject<ShadowType> shadow, QName attrName) {
 		PrismContainer<?> attributesContainer = shadow.findContainer(ShadowType.F_ATTRIBUTES);
 		if (attributesContainer == null) {
 			return null;
@@ -379,6 +391,43 @@ public class ShadowUtil {
 			return true;
 		}
 		return MiscUtil.equals(intent, shadowType.getIntent());
+	}
+	
+	public static String getHumanReadableName(PrismObject<? extends ShadowType> shadow) {
+		if (shadow == null) {
+			return "null";
+		}
+		StringBuilder sb = new StringBuilder();
+		ShadowType shadowType = shadow.asObjectable();
+		ShadowKindType kind = shadowType.getKind();
+		if (kind != null) {
+			sb.append(kind).append(" ");
+		}
+		sb.append("shadow ");
+		boolean first = true;
+		for(ResourceAttribute iattr: getIdentifiers(shadow)) {
+			if (first) {
+				sb.append("[");
+				first  = false;
+			} else {
+				sb.append(",");
+			}
+			sb.append(iattr.getElementName().getLocalPart());
+			sb.append("=");
+			sb.append(iattr.getRealValue());
+		}
+		if (first) {
+			sb.append("[");
+		}
+		sb.append("]");
+		return shadow.toString();
+	}
+	
+	public static String getHumanReadableName(ShadowType shadowType) {
+		if (shadowType == null) {
+			return "null";
+		}
+		return getHumanReadableName(shadowType.asPrismObject());
 	}
 	
 }
