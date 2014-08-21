@@ -232,7 +232,7 @@ public class PageForgetPassword extends PageBase {
 					
 					PageParameters parameters = new PageParameters();
 			        parameters.add(OnePageParameterEncoder.PARAMETER, user.getOid());
-			        setResponsePage(PageForgetPasswordQuestions.class, parameters);
+			        setResponsePage(PageResetPasswordSuccess.class);
 
 				}
 				else{
